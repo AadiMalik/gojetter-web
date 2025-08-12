@@ -1,21 +1,42 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import axios from 'axios';
 import api from '@/api';
 
 const tours = ref([]);
-const loading = ref(true)
+const categories = ref([]);
+const destinations = ref([]);
+
+const selectedDestination = ref('');
+const selectedCategory = ref('');
+const selectedDuration = ref('');
+const selectedPrice = ref('');
+
+const loading = ref(true);
 
 onMounted(async () => {
     await fetchData();
 });
+
 async function fetchData() {
     try {
-        // Run multiple APIs in parallel
-        const toursRes = await api.get('/tour-list');
+        const [toursRes, categoriesRes] = await Promise.all([
+            api.get('/tour-list'),
+            api.get('/tour-category-list')
+        ]);
 
         if (toursRes.data?.Success) {
             tours.value = toursRes.data.Data || [];
+
+            // Build unique destinations
+            const allLocations = tours.value
+                .flatMap(t => (t.location ? t.location.split(',') : []))
+                .map(loc => loc.trim())
+                .filter(Boolean);
+            destinations.value = [...new Set(allLocations)];
+        }
+
+        if (categoriesRes.data?.Success) {
+            categories.value = categoriesRes.data.Data || [];
         }
 
     } catch (err) {
@@ -24,7 +45,31 @@ async function fetchData() {
         loading.value = false;
     }
 }
+
+// Fetch tours with filters
+async function fetchTours() {
+    try {
+        loading.value = true;
+
+        const params = {};
+        if (selectedDestination.value) params.destination = selectedDestination.value;
+        if (selectedCategory.value) params.category_id = selectedCategory.value;
+        if (selectedDuration.value) params.duration = selectedDuration.value;
+        if (selectedPrice.value) params.sort_by = selectedPrice.value;
+
+        const res = await api.get('/tour-list', { params });
+
+        if (res.data?.Success) {
+            tours.value = res.data.Data || [];
+        }
+    } catch (err) {
+        console.error('Filter fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
 </script>
+
 <template>
     <main class="main">
 
@@ -49,41 +94,37 @@ async function fetchData() {
 
             <div class="container" data-aos="fade-up" data-aos-delay="100">
 
-                <!-- <div class="row">
+                <div class="row">
                     <div class="col-lg-8 mx-auto text-center mb-5">
                         <h2>Find Your Perfect Tour</h2>
                         <p>Discover unforgettable travel experiences with our curated collection of tours. Explore by
                             destination, travel style, or date to find the adventure that's perfect for you.</p>
                     </div>
-                </div> -->
+                </div>
 
                 <!-- Tour Filters -->
-                <!-- <div class="row mb-5" data-aos="fade-up" data-aos-delay="200">
+                <div class="row mb-5" data-aos="fade-up" data-aos-delay="200">
                     <div class="col-12">
                         <div class="tour-filters">
                             <div class="row">
                                 <div class="col-lg-3 col-md-6 mb-3">
-                                    <select class="form-select">
+                                    <select class="form-select" v-model="selectedDestination" @change="fetchTours">
                                         <option value="">Select Destination</option>
-                                        <option value="paris">Paris</option>
-                                        <option value="bali">Bali</option>
-                                        <option value="tokyo">Tokyo</option>
-                                        <option value="rome">Rome</option>
-                                        <option value="thailand">Thailand</option>
+                                        <option v-for="loc in destinations" :key="loc" :value="loc">
+                                            {{ loc }}
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="col-lg-3 col-md-6 mb-3">
-                                    <select class="form-select">
-                                        <option value="">Tour Type</option>
-                                        <option value="adventure">Adventure</option>
-                                        <option value="luxury">Luxury</option>
-                                        <option value="family">Family</option>
-                                        <option value="cultural">Cultural</option>
-                                        <option value="beach">Beach</option>
+                                    <select class="form-select" v-model="selectedCategory" @change="fetchTours">
+                                        <option value="">Category</option>
+                                        <option v-for="cat in categories" :key="cat.id" :value="cat.slug || cat.id">
+                                            {{ cat.name }}
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="col-lg-3 col-md-6 mb-3">
-                                    <select class="form-select">
+                                    <select class="form-select" v-model="selectedDuration" @change="fetchTours">
                                         <option value="">Duration</option>
                                         <option value="1-3">1-3 Days</option>
                                         <option value="4-7">4-7 Days</option>
@@ -92,18 +133,16 @@ async function fetchData() {
                                     </select>
                                 </div>
                                 <div class="col-lg-3 col-md-6 mb-3">
-                                    <select class="form-select">
+                                    <select class="form-select" v-model="selectedPrice" @change="fetchTours">
                                         <option value="">Price Range</option>
-                                        <option value="0-500">$0 - $500</option>
-                                        <option value="500-1000">$500 - $1,000</option>
-                                        <option value="1000-2000">$1,000 - $2,000</option>
-                                        <option value="2000+">$2,000+</option>
+                                        <option value="price_low_high">Low to High</option>
+                                        <option value="price_high_low">High to Low</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div> -->
+                </div>
 
                 <!-- Featured Tours Slider -->
                 <!-- <div class="row mb-5" data-aos="fade-up" data-aos-delay="300">
@@ -378,7 +417,7 @@ async function fetchData() {
                 <!-- Tour Grid -->
                 <div class="row" data-aos="fade-up" data-aos-delay="600">
                     <div class="col-12">
-                        <h3 class="section-subtitle mb-4">All Tours</h3>
+                        <!-- <h3 class="section-subtitle mb-4">All Tours</h3> -->
                         <div class="row">
                             <div v-if="loading" class="text-center">Loading tours...</div>
                             <div v-else-if="!tours.length" class="text-center">No tours found.</div>
@@ -386,11 +425,11 @@ async function fetchData() {
                                 <div class="tour-card">
                                     <div class="tour-image">
                                         <img :src="tour.thumbnail_url" alt="Swiss Alps" class="img-fluid" />
-                                        <div class="tour-price">${{ tour.price }}</div>
+                                        <div class="tour-price">${{ tour.tour_date[0].price }}</div>
                                     </div>
                                     <div class="tour-content">
-                                        <h4>{{ tour.title }}</h4>
-                                        <p v-html="tour.short_description"></p>
+                                        <h4 class="one-line">{{ tour.title }}</h4>
+                                        <p v-html="tour.short_description" class="one-line"></p>
                                         <div class="tour-details">
                                             <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
                                             <!-- <span><i class="bi bi-star-fill"></i> 4.8 (124 reviews)</span> -->
@@ -428,3 +467,14 @@ async function fetchData() {
     </main>
 
 </template>
+<style>
+.one-line {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    /* show only 1 line */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+</style>

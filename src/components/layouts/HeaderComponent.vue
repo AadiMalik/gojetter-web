@@ -6,7 +6,7 @@
             <router-link to="/" class="logo d-flex align-items-center me-auto me-xl-0">
                 <!-- Uncomment the line below if you also wish to use an image logo -->
                 <!-- <img src="/assets/img/logo.webp" alt=""> -->
-                <h1 class="sitename">Tour</h1>
+                <h1 class="sitename">GOJETTER</h1>
             </router-link>
 
             <nav id="navmenu" class="navmenu">
