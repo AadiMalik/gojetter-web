@@ -1,24 +1,29 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
+import api from '@/api';
 
 const tours = ref([]);
 const loading = ref(true)
 
 onMounted(async () => {
+    await fetchData();
+});
+async function fetchData() {
     try {
-        const res = await axios.get('https://admin.go-jetter.com/api/tour-list?type=Tour')
-        if (res.data?.Success) {
-            tours.value = res.data.Data || []
-        } else {
-            console.error('API error:', res.data?.Message)
+        // Run multiple APIs in parallel
+        const toursRes = await api.get('/tour-list');
+
+        if (toursRes.data?.Success) {
+            tours.value = toursRes.data.Data || [];
         }
+
     } catch (err) {
-        console.error('Fetch error:', err)
+        console.error('Fetch error:', err);
     } finally {
-        loading.value = false
+        loading.value = false;
     }
-})
+}
 </script>
 <template>
     <main class="main">

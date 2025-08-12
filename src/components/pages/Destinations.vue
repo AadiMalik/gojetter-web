@@ -1,27 +1,39 @@
 <script setup>
-import showcaseBg from '/assets/img/travel/showcase-8.webp'
-import showcaseImg from '/assets/img/travel/showcase-7.webp'
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
+import api from '@/api';
 
-const tours = ref([]);
-const loading = ref(true)
+const tourList = ref([]);
+const activityList = ref([]);
+const loading = ref(true);
 
 onMounted(async () => {
+    await fetchData();
+});
+
+async function fetchData() {
     try {
-        const res = await axios.get('https://admin.go-jetter.com/api/tour-list?type=Activity')
-        if (res.data?.Success) {
-            tours.value = res.data.Data || []
-        } else {
-            console.error('API error:', res.data?.Message)
+        // Run multiple APIs in parallel
+        const [toursRes, activitiesRes] = await Promise.all([
+            api.get('/tour-list'),
+            api.get('/activity-list')
+        ]);
+
+        if (toursRes.data?.Success) {
+            tourList.value = toursRes.data.Data || [];
         }
+        if (activitiesRes.data?.Success) {
+            activityList.value = activitiesRes.data.Data || [];
+        }
+
     } catch (err) {
-        console.error('Fetch error:', err)
+        console.error('Fetch error:', err);
     } finally {
-        loading.value = false
+        loading.value = false;
     }
-})
+}
 </script>
+
 <template>
     <main class="main">
 
@@ -68,7 +80,8 @@ onMounted(async () => {
 
                     <div class="row gy-4 isotope-container" data-aos="fade-up" data-aos-delay="300">
 
-                        <div v-for="tour in tours" :key="tour.id" class="col-lg-4 col-md-6 destination-item isotope-item filter-coastal">
+                        <div v-for="tour in tours" :key="tour.id"
+                            class="col-lg-4 col-md-6 destination-item isotope-item filter-coastal">
                             <router-link :to="`/tour-detail/${tour.slug}`" class="destination-tile">
                                 <div class="tile-image">
                                     <img :src="tour.thumbnail_url" alt="{{ tour.title }}" class="img-fluid"
@@ -79,7 +92,8 @@ onMounted(async () => {
                                             <h4>{{ tour.title }}</h4>
                                             <p v-html="tour.short_description"></p>
                                             <div class="destination-stats">
-                                                <span class="tours-available"><i class="bi bi-map"></i> {{ tour.duration }}</span>
+                                                <span class="tours-available"><i class="bi bi-map"></i> {{ tour.duration
+                                                    }}</span>
                                                 <span class="starting-price">$ {{ tour.price }}</span>
                                             </div>
                                         </div>
