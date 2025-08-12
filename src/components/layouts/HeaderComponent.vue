@@ -1,0 +1,39 @@
+<template>
+    <header id="header" class="header d-flex align-items-center fixed-top">
+        <div
+            class="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+
+            <router-link to="/" class="logo d-flex align-items-center me-auto me-xl-0">
+                <!-- Uncomment the line below if you also wish to use an image logo -->
+                <!-- <img src="/assets/img/logo.webp" alt=""> -->
+                <h1 class="sitename">Tour</h1>
+            </router-link>
+
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><router-link to="/"  class="nav-link" active-class="active" style="cursor: pointer;">Home</router-link></li>
+                    <li><router-link to="/about" style="cursor: pointer;">About</router-link></li>
+                    <li><router-link to="/destinations">Destinations</router-link></li>
+                    <li><router-link to="/tours">Tours</router-link></li>
+                    <li><router-link to="/gallary">Gallery</router-link></li>
+                    <li><router-link to="/blogs">Blog</router-link></li>
+                    <li class="dropdown"><a href="#"><span>More Pages</span> <i
+                                class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><router-link to="/testimonials">Testimonials</router-link></li>
+                            <li><router-link to="/faqs">Frequently Asked Questions</router-link></li>
+                            <li><router-link to="/terms">Terms</router-link></li>
+                            <li><router-link to="/privacy">Privacy</router-link></li>
+                        </ul>
+                    </li>
+                    
+                    <li><router-link to="/contact">Contact</router-link></li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+
+            <router-link class="btn-getstarted" to="/destinations">Get Started</router-link>
+
+        </div>
+    </header>
+</template>
