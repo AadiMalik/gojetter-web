@@ -475,7 +475,7 @@ async function fetchActivities() {
 <style>
 .one-line {
     display: -webkit-box;
-    /* -webkit-line-clamp: 1; */
+    -webkit-line-clamp: 1;
     /* show only 1 line */
     -webkit-box-orient: vertical;
     overflow: hidden;

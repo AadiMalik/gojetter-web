@@ -11,14 +11,15 @@
 
             <nav id="navmenu" class="navmenu">
                 <ul>
-                    <li><router-link to="/"  class="nav-link" active-class="active" style="cursor: pointer;">Home</router-link></li>
+                    <li><router-link to="/" class="nav-link" active-class="active"
+                            style="cursor: pointer;">Home</router-link></li>
                     <li><router-link to="/about" style="cursor: pointer;">About</router-link></li>
                     <li><router-link to="/destinations">Destinations</router-link></li>
                     <li><router-link to="/tours">Tours</router-link></li>
                     <li><router-link to="/activity">Activities</router-link></li>
                     <li><router-link to="/gallary">Gallery</router-link></li>
                     <li><router-link to="/blogs">Blog</router-link></li>
-                    <li class="dropdown"><a href="#"><span>More Pages</span> <i
+                    <!-- <li class="dropdown"><a href="#"><span>More Pages</span> <i
                                 class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
                             <li><router-link to="/testimonials">Testimonials</router-link></li>
@@ -26,9 +27,21 @@
                             <li><router-link to="/terms">Terms</router-link></li>
                             <li><router-link to="/privacy">Privacy</router-link></li>
                         </ul>
-                    </li>
-                    
+                    </li> -->
+
                     <li><router-link to="/contact">Contact</router-link></li>
+                    <!-- Dynamic Auth Links -->
+                    <li v-if="!user"><router-link to="/login">Login</router-link></li>
+                    <li v-else class="dropdown">
+                        <a href="#" style="cursor: pointer;">
+                            <i class="fa fa-person"></i> {{ user.name }} <i class="bi bi-chevron-down toggle-dropdown"></i>
+                        </a>
+                        <ul>
+                            <li><router-link to="/account/booking">My Bookings</router-link></li>
+                            <li><router-link to="/account/profile">Profile</router-link></li>
+                            <li><a @click.prevent="logout" style="cursor: pointer;">Logout</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
@@ -38,3 +51,14 @@
         </div>
     </header>
 </template>
+<script setup>
+import { useAuthStore } from '@/store/auth'
+import { computed } from 'vue'
+
+const auth = useAuthStore()
+const user = computed(() => auth.user)
+
+function logout() {
+    auth.logout()
+}
+</script>
