@@ -3,8 +3,8 @@ import { onMounted, ref } from 'vue';
 import axios from 'axios';
 import api from '@/api';
 
-const tourList = ref([]);
-const activityList = ref([]);
+const tours = ref([]);
+const activities = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
@@ -20,10 +20,10 @@ async function fetchData() {
         ]);
 
         if (toursRes.data?.Success) {
-            tourList.value = toursRes.data.Data || [];
+            tours.value = toursRes.data.Data || [];
         }
         if (activitiesRes.data?.Success) {
-            activityList.value = activitiesRes.data.Data || [];
+            activities.value = activitiesRes.data.Data || [];
         }
 
     } catch (err) {
@@ -87,14 +87,17 @@ async function fetchData() {
                                     <img :src="tour.thumbnail_url" alt="{{ tour.title }}" class="img-fluid"
                                         loading="lazy">
                                     <div class="overlay-content">
-                                        <span class="destination-tag luxury">{{ tour.tour_category.name }}</span>
+                                        <span class="destination-tag luxury">{{ tour.location }}</span>
                                         <div class="destination-info">
-                                            <h4>{{ tour.title }}</h4>
-                                            <p v-html="tour.short_description"></p>
+                                            <h4  class="one-line">{{ tour.title }}</h4>
+                                            <p v-html="tour.short_description"  class="one-line"></p>
                                             <div class="destination-stats">
                                                 <span class="tours-available"><i class="bi bi-map"></i> {{ tour.duration
                                                     }}</span>
-                                                <span class="starting-price">$ {{ tour.price }}</span>
+                                                <span class="starting-price">${{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
+                                                ? `${tour.tour_date[0].price}`
+                                            : '0'
+                                            }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -129,3 +132,14 @@ async function fetchData() {
 
     </main>
 </template>
+<style>
+.one-line {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    /* show only 1 line */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+</style>

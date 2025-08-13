@@ -1,11 +1,10 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-// https://vite.dev/config/
 export default defineConfig({
+  base: './', // ✅ important for relative paths in production
   plugins: [
     vue(),
     vueDevTools(),
@@ -16,12 +15,12 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0', // Allow access from network, Docker, WSL
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
     hmr: {
-      protocol: 'ws', // change to 'wss' if using HTTPS
-      host: 'localhost', // or your machine's LAN IP if testing from another device
+      protocol: 'ws', // for local HTTP dev
+      host: 'localhost',
       port: 5173
     }
   }

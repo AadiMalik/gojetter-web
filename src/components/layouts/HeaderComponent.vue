@@ -15,6 +15,7 @@
                     <li><router-link to="/about" style="cursor: pointer;">About</router-link></li>
                     <li><router-link to="/destinations">Destinations</router-link></li>
                     <li><router-link to="/tours">Tours</router-link></li>
+                    <li><router-link to="/activity">Activities</router-link></li>
                     <li><router-link to="/gallary">Gallery</router-link></li>
                     <li><router-link to="/blogs">Blog</router-link></li>
                     <li class="dropdown"><a href="#"><span>More Pages</span> <i

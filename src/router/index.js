@@ -6,6 +6,7 @@ import Home from '@/components/pages/Home.vue'
 import About from '@/components/pages/About.vue'
 import Destinations from '@/components/pages/Destinations.vue'
 import Tour from '@/components/pages/Tour.vue'
+import Activity from '@/components/pages/Activity.vue'
 import Gallary from '@/components/pages/Gallary.vue'
 import Blog from '@/components/pages/Blog.vue'
 import Testimonials from '@/components/pages/Testimonials.vue'
@@ -18,6 +19,7 @@ const routes = [
   { path: '/about', component: About },
   { path: '/destinations', component: Destinations },
   { path: '/tours', component: Tour },
+  { path: '/activity', component: Activity },
   { path: '/gallary', component: Gallary },
   { path: '/blogs', component: Blog },
   { path: '/testimonials', component: Testimonials },
