@@ -33,17 +33,17 @@ async function handleRegister() {
             password: password.value,
             password_confirmation: confirmPassword.value
         })
-        if (response.data && !response.data.Success) {
-            errors.value = err.response.data.Message
-            return;
+        console.error(response.data.Message)
+        if (response.data && response.data.Success) {
+            message.value = response.data.Message;
+            // ✅ Redirect only if success
+            router.push({
+                path: '/otp-verify',
+                query: { email: email.value }
+            })
         } else {
-            message.value = err.response.data.Message;
+            errors.value = response.data?.Message || 'Registration failed'
         }
-        // Redirect to OTP verification page with email query
-        router.push({
-            name: 'otp-verify', // Make sure this route exists in your router
-            query: { email: email.value }
-        })
     } catch (err) {
         errors.value = 'Registration failed. Please try again.'
     } finally {
@@ -80,8 +80,9 @@ async function handleRegister() {
                             <div v-if="errors" class="alert alert-danger text-center mb-3">
                                 {{ errors }}
                             </div>
-                            <!-- Backend success -->
-                            <div v-if="message" class="alert alert-success text-center mb-3">
+
+                            <!-- Show success only if no error -->
+                            <div v-else-if="message" class="alert alert-success text-center mb-3">
                                 {{ message }}
                             </div>
                             <form @submit.prevent="handleRegister">

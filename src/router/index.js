@@ -29,7 +29,7 @@ const routes = [
   { path: '/', component: Home },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
-  { path: '/otp-verify', component: Otp },
+  { path: '/otp-verify',name: 'otp-verify', component: Otp },
   { path: '/forgot-password', component: ForgetPassword },
   { path: '/reset-password', component: ResetPassword },
   { path: '/about', component: About },

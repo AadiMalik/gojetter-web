@@ -37,8 +37,7 @@
                             <i class="fa fa-person"></i> {{ user.name }} <i class="bi bi-chevron-down toggle-dropdown"></i>
                         </a>
                         <ul>
-                            <li><router-link to="/account/booking">My Bookings</router-link></li>
-                            <li><router-link to="/account/profile">Profile</router-link></li>
+                            <li><router-link to="/account/booking">My Account</router-link></li>
                             <li><a @click.prevent="logout" style="cursor: pointer;">Logout</a></li>
                         </ul>
                     </li>

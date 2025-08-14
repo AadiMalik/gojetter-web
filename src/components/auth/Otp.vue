@@ -1,69 +1,133 @@
 <script setup>
 import showcaseBg from '@/assets/img/travel/showcase-8.webp'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/api' // adjust to your API helper
+
+const route = useRoute()
+const router = useRouter()
 
 const otp = ref(['', '', '', '', '', ''])
-const loading = ref(false) // Loading state
+const loading = ref(false)
+const resendLoading = ref(false)
+const message = ref('')
+const errors = ref('')
+const countdown = ref(120) // 2 minutes countdown
+const email = ref(route.query.email || '')
 
+// Countdown logic
+let timer = null
+function startCountdown() {
+  countdown.value = 120
+  timer = setInterval(() => {
+    if (countdown.value > 0) {
+      countdown.value--
+    } else {
+      clearInterval(timer)
+    }
+  }, 1000)
+}
+
+onMounted(() => {
+  startCountdown()
+})
+
+// OTP submit
 async function handleOtpSubmit() {
   const code = otp.value.join('')
-  console.log('OTP Code:', code)
-
   loading.value = true
+  message.value = ''
+  errors.value = ''
+
   try {
-    // Call verify OTP API here
-    // Example:
-    // await api.post('/verify-otp', { otp: code })
+    const { data } = await api.post('/verify-email-otp', { email: email.value, otp: code })
+    if (data.Success) {
+      message.value = data.Message
+      setTimeout(() => router.push('/login'), 1500)
+    } else {
+      errors.value = data.Message
+    }
   } catch (err) {
-    console.error('OTP verification failed:', err)
-    alert('OTP verification failed. Please try again.')
+    errors.value = err.response?.data?.Message || 'Something went wrong'
   } finally {
     loading.value = false
   }
 }
+
+// Resend OTP
+async function handleResendOtp() {
+  resendLoading.value = true
+  message.value = ''
+  errors.value = ''
+
+  try {
+    const { data } = await api.post('/resend-email-otp', { email: email.value })
+    if (data.Success) {
+      message.value = data.Message
+      startCountdown()
+    } else {
+      errors.value = data.Message
+    }
+  } catch (err) {
+    errors.value = err.response?.data?.Message || 'Something went wrong'
+  } finally {
+    resendLoading.value = false
+  }
+}
+
+// Auto focus to next box
+function handleInput(e, index) {
+  if (e.target.value && index < otp.value.length - 1) {
+    e.target.nextElementSibling?.focus()
+  }
+}
 </script>
+
 
 <template>
   <main class="main">
-
-    <!-- Page Title -->
-    <div 
-      class="page-title dark-background" 
-      data-aos="fade"
-      :style="{ backgroundImage: `url(${showcaseBg})` }"
-    >
+    <div class="page-title dark-background" :style="{ backgroundImage: `url(${showcaseBg})` }">
       <div class="container position-relative">
         <h1>OTP Verification</h1>
         <p>Enter the 6-digit code sent to your email</p>
-        <nav class="breadcrumbs">
-          <ol>
-            <li><router-link to="/">Home</router-link></li>
-            <li class="current">OTP Verification</li>
-          </ol>
-        </nav>
       </div>
     </div>
 
-    <!-- OTP Section -->
     <section class="section py-5">
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-md-6 col-lg-5">
             <div class="card shadow p-4 text-center">
               <h3 class="mb-4">Verify OTP</h3>
+              <div v-if="errors" class="alert alert-danger text-center mb-3">
+                {{ errors }}
+              </div>
+
+              <!-- Show success only if no error -->
+              <div v-else-if="message" class="alert alert-success text-center mb-3">
+                {{ message }}
+              </div>
+
               <form @submit.prevent="handleOtpSubmit">
                 <div class="d-flex justify-content-center mb-4">
-                  <input v-for="(digit, i) in otp" :key="i" maxlength="1"
-                         class="form-control mx-1 text-center"
-                         style="width:50px; font-size:1.5rem"
-                         v-model="otp[i]" required>
+                  <input v-for="(digit, i) in otp" :key="i" maxlength="1" class="form-control mx-1 text-center"
+                    style="width:50px; font-size:1.5rem" v-model="otp[i]" required @input="handleInput($event, i)">
+
                 </div>
+
                 <button type="submit" class="btn btn-primary w-100" :disabled="loading">
-                  <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
                   {{ loading ? 'Verifying...' : 'Verify' }}
                 </button>
+
                 <div class="mt-3">
-                  Didn’t receive code? <a href="#">Resend</a>
+                  <template v-if="countdown > 0">
+                    <small>Please wait {{ countdown }}s before resending.</small>
+                  </template>
+                  <template v-else>
+                    Didn’t receive code?
+                    <a href="javascript:void(0)" @click="handleResendOtp">Resend</a>
+                  </template>
                 </div>
               </form>
             </div>
@@ -71,6 +135,5 @@ async function handleOtpSubmit() {
         </div>
       </div>
     </section>
-
   </main>
 </template>
