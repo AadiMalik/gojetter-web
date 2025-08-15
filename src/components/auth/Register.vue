@@ -2,6 +2,8 @@
 import showcaseBg from '@/assets/img/travel/showcase-8.webp'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 import api from '@/api'
 
 const router = useRouter()
@@ -13,14 +15,10 @@ const password = ref('')
 const confirmPassword = ref('')
 const agree = ref(false)
 const loading = ref(false) // Loading state
-const errors = ref('')
-const message = ref('')
 
 async function handleRegister() {
-    errors.value = '';
-    message.value = ''
     if (password.value !== confirmPassword.value) {
-        errors.value = 'Passwords do not match'
+        toast.error('Passwords do not match');
         return
     }
 
@@ -35,17 +33,17 @@ async function handleRegister() {
         })
         console.error(response.data.Message)
         if (response.data && response.data.Success) {
-            message.value = response.data.Message;
+            toast.success(response.data.Message);
             // ✅ Redirect only if success
             router.push({
                 path: '/otp-verify',
                 query: { email: email.value }
             })
         } else {
-            errors.value = response.data?.Message || 'Registration failed'
+            toast.error(response.data?.Message || 'Registration failed');
         }
     } catch (err) {
-        errors.value = 'Registration failed. Please try again.'
+        toast.error('Registration failed. Please try again.');
     } finally {
         loading.value = false
     }

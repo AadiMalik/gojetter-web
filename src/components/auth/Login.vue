@@ -22,13 +22,12 @@
             <div class="card shadow p-4">
               <h3 class="text-center mb-4">Sign In</h3>
               <!-- Dynamic Message -->
-              <div v-if="serverMessage" class="alert alert-warning text-center">{{ serverMessage }}</div>
               <form @submit.prevent="handleLogin">
                 <!-- Email or Username -->
                 <div class="mb-3">
-                  <label for="login" class="form-label">Email or Username</label>
-                  <input type="text" id="login" class="form-control" placeholder="Enter email or username"
-                    v-model="loginInput" required />
+                  <label for="login" class="form-label">Email</label>
+                  <input type="email" id="login" class="form-control" placeholder="Enter email" v-model="loginInput"
+                    required />
                 </div>
 
                 <!-- Password -->
@@ -72,31 +71,37 @@ import showcaseBg from "@/assets/img/travel/showcase-8.webp"
 import { ref } from "vue"
 import { useAuthStore } from "@/store/auth"
 import { useRouter } from "vue-router"
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 
+const router = useRouter()
 const loginInput = ref("")
 const password = ref("")
 const remember = ref(false)
 const loading = ref(false)
 
 const auth = useAuthStore()
-const router = useRouter()
-
-const serverMessage = ref('');
 
 async function handleLogin() {
-    loading.value = true;
-    try {
-        const res = await auth.login(loginInput.value, password.value);
+  loading.value = true;
+  try {
+    const res = await auth.login(loginInput.value, password.value);
 
-        if (res?.otpRequired) {
-            serverMessage.value = res.message;
-            return; // stop here, already redirected
-        }
-
-    } catch (err) {
-        serverMessage.value = err.message || 'Invalid credentials. Please try again.';
-    } finally {
-        loading.value = false;
+    if (res?.otpRequired) {
+      toast.success(res.message);
+      router.push({
+        path: '/otp-verify',
+        query: { email: res.email }
+      });
+      return;
     }
+
+    router.push('/account/booking');
+
+  } catch (err) {
+    toast.error(err.message || 'Invalid credentials. Please try again.');
+  } finally {
+    loading.value = false;
+  }
 }
 </script>

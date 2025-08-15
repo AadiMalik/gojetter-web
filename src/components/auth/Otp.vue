@@ -2,7 +2,9 @@
 import showcaseBg from '@/assets/img/travel/showcase-8.webp'
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/api' // adjust to your API helper
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
+import api from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -42,13 +44,13 @@ async function handleOtpSubmit() {
   try {
     const { data } = await api.post('/verify-email-otp', { email: email.value, otp: code })
     if (data.Success) {
-      message.value = data.Message
+      toast.success(data.Message)
       setTimeout(() => router.push('/login'), 1500)
     } else {
-      errors.value = data.Message
+      toast.error(data.Message);
     }
   } catch (err) {
-    errors.value = err.response?.data?.Message || 'Something went wrong'
+    toast.error(err.response?.data?.Message || 'Something went wrong');
   } finally {
     loading.value = false
   }
@@ -57,19 +59,17 @@ async function handleOtpSubmit() {
 // Resend OTP
 async function handleResendOtp() {
   resendLoading.value = true
-  message.value = ''
-  errors.value = ''
 
   try {
     const { data } = await api.post('/resend-email-otp', { email: email.value })
     if (data.Success) {
-      message.value = data.Message
+      toast.success(data.Message);
       startCountdown()
     } else {
-      errors.value = data.Message
+      toast.error(data.Message);
     }
   } catch (err) {
-    errors.value = err.response?.data?.Message || 'Something went wrong'
+    toast.error(err.response?.data?.Message || 'Something went wrong');
   } finally {
     resendLoading.value = false
   }
@@ -99,14 +99,6 @@ function handleInput(e, index) {
           <div class="col-md-6 col-lg-5">
             <div class="card shadow p-4 text-center">
               <h3 class="mb-4">Verify OTP</h3>
-              <div v-if="errors" class="alert alert-danger text-center mb-3">
-                {{ errors }}
-              </div>
-
-              <!-- Show success only if no error -->
-              <div v-else-if="message" class="alert alert-success text-center mb-3">
-                {{ message }}
-              </div>
 
               <form @submit.prevent="handleOtpSubmit">
                 <div class="d-flex justify-content-center mb-4">

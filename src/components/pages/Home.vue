@@ -111,7 +111,6 @@
 
             <div class="container" data-aos="fade-up" data-aos-delay="100">
 
-                <!-- About Us Content -->
                 <div class="row align-items-center mb-5">
                     <div class="col-lg-6" data-aos="fade-right" data-aos-delay="200">
                         <div class="content">
@@ -155,10 +154,11 @@
                             </div>
                         </div>
                     </div>
-                </div><!-- End About Us Content -->
+                </div>
+                <!-- End About Us Content -->
 
                 <!-- Why Choose Us -->
-                <div class="why-choose-section">
+                <!-- <div class="why-choose-section">
                     <div class="row justify-content-center">
                         <div class="col-lg-8 text-center mb-5" data-aos="fade-up" data-aos-delay="100">
                             <h3>Why Choose Us for Your Next Adventure</h3>
@@ -235,12 +235,14 @@
                                     mollit anim.</p>
                             </div>
                         </div>
-                    </div><!-- End Features Grid -->
-                </div><!-- End Why Choose Us -->
+                    </div>
+                </div> -->
+                <!-- End Why Choose Us -->
 
             </div>
 
-        </section><!-- /Why Us Section -->
+        </section>
+        <!-- /Why Us Section -->
 
         <!-- Featured Destinations Section -->
         <section id="featured-destinations" class="featured-destinations section">

@@ -25,6 +25,9 @@ import Booking from '@/components/accounts/Booking.vue'
 import Order from '@/components/accounts/Order.vue'
 import UpdateProfile from '@/components/accounts/UpdateProfile.vue'
 import ChangePassword from '@/components/accounts/ChangePassword.vue'
+
+import TourDetail from '@/components/pages/TourDetail.vue'
+
 const routes = [
   { path: '/', component: Home },
   { path: '/login', component: Login },
@@ -43,6 +46,9 @@ const routes = [
   { path: '/terms', component: Terms },
   { path: '/privacy', component: Privacy },
   { path: '/contact', component: Contact },
+
+  
+  { path: '/tour-detail/:slug', name:'tour-detail', component: TourDetail },
 
 
   {
