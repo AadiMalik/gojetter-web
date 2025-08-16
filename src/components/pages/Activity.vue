@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import api from '@/api';
 
-const activites = ref([]);
+const data = ref([]);
 const categories = ref([]);
 const destinations = ref([]);
 
@@ -25,14 +25,8 @@ async function fetchData() {
         ]);
 
         if (activitiesRes.data?.Success) {
-            activites.value = activitiesRes.data.Data || [];
-
-            // Build unique destinations
-            const allLocations = activites.value
-                .flatMap(t => (t.location ? t.location.split(',') : []))
-                .map(loc => loc.trim())
-                .filter(Boolean);
-            destinations.value = [...new Set(allLocations)];
+            data.value = activitiesRes.data.Data.data || [];
+            destinations.value = activitiesRes.data.Data.destinations || [];
         }
 
         if (categoriesRes.data?.Success) {
@@ -52,7 +46,7 @@ async function fetchActivities() {
         loading.value = true;
 
         const params = {};
-        if (selectedDestination.value) params.destination = selectedDestination.value;
+        if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
@@ -60,7 +54,8 @@ async function fetchActivities() {
         const res = await api.get('/activity-list', { params });
 
         if (res.data?.Success) {
-            tours.value = res.data.Data || [];
+            data.value = res.data.Data.data || [];
+            destinations.value = res.data.Data.destinations || [];
         }
     } catch (err) {
         console.error('Filter fetch error:', err);
@@ -97,7 +92,8 @@ async function fetchActivities() {
                 <div class="row">
                     <div class="col-lg-8 mx-auto text-center mb-5">
                         <h2>Find Your Perfect Activity</h2>
-                        <p>Discover unforgettable travel experiences with our curated collection of activities. Explore by
+                        <p>Discover unforgettable travel experiences with our curated collection of activities. Explore
+                            by
                             destination, travel style, or date to find the adventure that's perfect for you.</p>
                     </div>
                 </div>
@@ -108,10 +104,11 @@ async function fetchActivities() {
                         <div class="tour-filters">
                             <div class="row">
                                 <div class="col-lg-3 col-md-6 mb-3">
-                                    <select class="form-select" v-model="selectedDestination" @change="fetchActivities">
+                                    <select class="form-select" v-model="selectedDestination" @change="fetchTours">
                                         <option value="">Select Destination</option>
-                                        <option v-for="loc in destinations" :key="loc" :value="loc">
-                                            {{ loc }}
+                                        <option v-for="destination in destinations" :key="destination"
+                                            :value="destination.id">
+                                            {{ destination.name }}
                                         </option>
                                     </select>
                                 </div>
@@ -417,18 +414,24 @@ async function fetchActivities() {
                 <!-- Tour Grid -->
                 <div class="row" data-aos="fade-up" data-aos-delay="600">
                     <div class="col-12">
-                        <!-- <h3 class="section-subtitle mb-4">All Activities</h3> -->
-                        <div class="row">
-                            <div v-if="loading" class="text-center">Loading Activities...</div>
-                            <div v-else-if="!activites.length" class="text-center">No Activities found.</div>
-                            <div v-for="activity in activites" :key="activity.id" class="col-lg-4 col-md-6 mb-4">
+                        <!-- <h3 class="section-subtitle mb-4">All Tours</h3> -->
+                        <div v-if="loading" class="text-center">Loading activities...</div>
+                        <div v-else-if="!data.length" class="text-center">No activities found.</div>
+                        <div class="row" v-for="des in data" :key="des.destination_id">
+
+                            <div class="col-md-12">
+                                <h4>{{ des.destination_name }}</h4>
+                                <hr>
+                                <div v-if="!des.activities.length" class="text-center">No activities found.</div>
+                            </div>
+                            <div class="col-lg-4 col-md-6 mb-4" v-for="activity in des.activities" :key="activity.id">
                                 <div class="tour-card">
                                     <div class="tour-image">
-                                        <img :src="activity.thumbnail_url" alt="Swiss Alps" class="img-fluid" />
+                                        <img :src="activity.thumbnail_url" alt="Tour image" class="img-fluid" />
                                         <div class="tour-price">
                                             {{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
                                                 ? `$${activity.activity_date[0].price}`
-                                            : '$0'
+                                                : '$0'
                                             }}
                                         </div>
                                     </div>
@@ -437,7 +440,6 @@ async function fetchActivities() {
                                         <p v-html="activity.short_description" class="one-line"></p>
                                         <div class="tour-details">
                                             <span><i class="bi bi-clock"></i> {{ activity.duration }}</span>
-                                            <!-- <span><i class="bi bi-star-fill"></i> 4.8 (124 reviews)</span> -->
                                         </div>
                                         <router-link :to="`/activity-detail/${activity.slug}`" class="bt-outline-primary">
                                             View Activity

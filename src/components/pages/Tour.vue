@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import api from '@/api';
 
-const tours = ref([]);
+const data = ref([]);
 const categories = ref([]);
 const destinations = ref([]);
 
@@ -25,14 +25,8 @@ async function fetchData() {
         ]);
 
         if (toursRes.data?.Success) {
-            tours.value = toursRes.data.Data || [];
-
-            // Build unique destinations
-            const allLocations = tours.value
-                .flatMap(t => (t.location ? t.location.split(',') : []))
-                .map(loc => loc.trim())
-                .filter(Boolean);
-            destinations.value = [...new Set(allLocations)];
+            data.value = toursRes.data.Data.data || [];
+            destinations.value = toursRes.data.Data.destinations || [];
         }
 
         if (categoriesRes.data?.Success) {
@@ -52,7 +46,7 @@ async function fetchTours() {
         loading.value = true;
 
         const params = {};
-        if (selectedDestination.value) params.destination = selectedDestination.value;
+        if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
@@ -60,7 +54,8 @@ async function fetchTours() {
         const res = await api.get('/tour-list', { params });
 
         if (res.data?.Success) {
-            tours.value = res.data.Data || [];
+            data.value = res.data.Data.data || [];
+            destinations.value = res.data.Data.destinations || [];
         }
     } catch (err) {
         console.error('Filter fetch error:', err);
@@ -110,8 +105,9 @@ async function fetchTours() {
                                 <div class="col-lg-3 col-md-6 mb-3">
                                     <select class="form-select" v-model="selectedDestination" @change="fetchTours">
                                         <option value="">Select Destination</option>
-                                        <option v-for="loc in destinations" :key="loc" :value="loc">
-                                            {{ loc }}
+                                        <option v-for="destination in destinations" :key="destination"
+                                            :value="destination.id">
+                                            {{ destination.name }}
                                         </option>
                                     </select>
                                 </div>
@@ -418,17 +414,23 @@ async function fetchTours() {
                 <div class="row" data-aos="fade-up" data-aos-delay="600">
                     <div class="col-12">
                         <!-- <h3 class="section-subtitle mb-4">All Tours</h3> -->
-                        <div class="row">
-                            <div v-if="loading" class="text-center">Loading tours...</div>
-                            <div v-else-if="!tours.length" class="text-center">No tours found.</div>
-                            <div v-for="tour in tours" :key="tour.id" class="col-lg-4 col-md-6 mb-4">
+                        <div v-if="loading" class="text-center">Loading tours...</div>
+                        <div v-else-if="!data.length" class="text-center">No tours found.</div>
+                        <div class="row" v-for="des in data" :key="des.destination_id">
+
+                            <div class="col-md-12">
+                                <h4>{{ des.destination_name }}</h4>
+                                <hr>
+                                <div v-if="!des.tours.length" class="text-center">No tours found.</div>
+                            </div>
+                            <div class="col-lg-4 col-md-6 mb-4" v-for="tour in des.tours" :key="tour.id">
                                 <div class="tour-card">
                                     <div class="tour-image">
-                                        <img :src="tour.thumbnail_url" alt="Swiss Alps" class="img-fluid" />
+                                        <img :src="tour.thumbnail_url" alt="Tour image" class="img-fluid" />
                                         <div class="tour-price">
                                             {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
                                                 ? `$${tour.tour_date[0].price}`
-                                            : '$0'
+                                                : '$0'
                                             }}
                                         </div>
                                     </div>
@@ -437,7 +439,6 @@ async function fetchTours() {
                                         <p v-html="tour.short_description" class="one-line"></p>
                                         <div class="tour-details">
                                             <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
-                                            <!-- <span><i class="bi bi-star-fill"></i> 4.8 (124 reviews)</span> -->
                                         </div>
                                         <router-link :to="`/tour-detail/${tour.slug}`" class="bt-outline-primary">
                                             View Tour

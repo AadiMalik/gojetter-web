@@ -2,6 +2,11 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,7 +18,6 @@ const adults = ref(1)
 
 // Active FAQ index
 const activeFaq = ref(null)
-
 const toggleFaq = (index) => {
       activeFaq.value = activeFaq.value === index ? null : index
 }
@@ -26,8 +30,10 @@ const formatDate = (dateStr) => {
       const options = { day: '2-digit', month: 'short', year: 'numeric' }
       return new Date(dateStr).toLocaleDateString('en-GB', options)
 }
+const formatTime = (dateStr) => {
+      return dayjs(dateStr).fromNow()
+}
 
-// Function to check if booking is past cutoff
 const isPastCutoff = (date) => {
       const start = new Date(date.start_date)
       const cutoffDate = new Date(start)
@@ -62,7 +68,6 @@ const bookNow = () => {
 
 onMounted(async () => {
       const slug = route.params.slug
-
       if (!slug) {
             router.push('/tours')
             return
@@ -81,9 +86,49 @@ onMounted(async () => {
             loading.value = false
       }
 })
+
+/* -------------------------
+   ⭐ Reviews (inline refresh)
+-------------------------- */
+const form = ref({
+      rating: null,
+      comment: ""
+})
+
+const postReview = async () => {
+      if (!form.value.rating) {
+            toast.error("Please select a rating.")
+            return
+      }
+      try {
+            const res = await api.post("/save-tour-review", {
+                  tour_id: tour.value?.id,
+                  rating: form.value.rating,
+                  comment: form.value.comment
+            })
+
+            if (res.data?.Success && res.data?.Data) {
+                  // Push the new review into the same array
+                  tour.value.tour_reviews.unshift(res.data.Data)
+
+                  // Reset form
+                  form.value.rating = null
+                  form.value.comment = ""
+            } else {
+                  toast.error(res.data?.Message || "Something went wrong")
+            }
+      } catch (err) {
+            console.error(err)
+            if (err.response?.status === 401) {
+                  router.push({
+                        path: "/login",
+                        query: { redirect: route.fullPath } // 👈 so user comes back to tour detail after login
+                  })
+            }
+            toast.error("Error while saving review")
+      }
+}
 </script>
-
-
 
 
 <template>
@@ -152,8 +197,8 @@ onMounted(async () => {
                               <div class="col-6 col-md-3 mb-3" v-if="tour?.location">
                                     <div class="info-box">
                                           <i class="bi bi-geo-alt"></i>
-                                          <h6>Location</h6>
-                                          <p>{{ tour?.location }}</p>
+                                          <h6>Destination</h6>
+                                          <p>{{ tour?.destination?.name }}</p>
                                     </div>
                               </div>
 
@@ -184,6 +229,20 @@ onMounted(async () => {
                                                                   {{ tag.trim() }}
                                                             </span>
                                                       </div>
+                                                </div>
+                                          </div>
+                                          <div class="row mt-2 mb-3">
+                                                <div class="stars">
+                                                      <span v-for="n in 5" :key="n">
+                                                            <i v-if="n <= Math.floor(tour?.average_rating)"
+                                                                  class="bi bi-star text-warning"></i>
+                                                            <i v-else-if="n === Math.ceil(tour?.average_rating) && tour?.average_rating % 1 !== 0"
+                                                                  class="bi bi-star-fill text-warning"></i>
+                                                            <i v-else class="bi bi-star text-muted"></i>
+                                                      </span>
+                                                      <b style="margin-left: 5px;"> {{
+                                                            Number(tour?.average_rating).toFixed(2) }}</b>
+                                                      <span> ( {{ tour?.tour_reviews.length }} Reviews )</span>
                                                 </div>
                                           </div>
                                           <h4>Overview</h4>
@@ -388,7 +447,80 @@ onMounted(async () => {
                                     </div>
                               </div>
                         </div>
+                        <hr>
+                        <div class="row">
+                              <div class="col-md-12">
+                                    <div class="card">
+                                          <div class="card-header">
+                                                <h4>Add Review</h4>
+                                          </div>
+                                          <div class="card-body">
+                                                <div class="row">
+                                                      <div class="col-md-12">
+                                                            <div class="rating">
+                                                                  <input type="radio" name="rating" id="rating-5"
+                                                                        v-model="form.rating">
+                                                                  <label for="rating-5"></label>
+                                                                  <input type="radio" name="rating" id="rating-4"
+                                                                        v-model="form.rating">
+                                                                  <label for="rating-4"></label>
+                                                                  <input type="radio" name="rating" id="rating-3"
+                                                                        v-model="form.rating">
+                                                                  <label for="rating-3"></label>
+                                                                  <input type="radio" name="rating" id="rating-2"
+                                                                        v-model="form.rating">
+                                                                  <label for="rating-2"></label>
+                                                                  <input type="radio" name="rating" id="rating-1"
+                                                                        v-model="form.rating">
+                                                                  <label for="rating-1"></label>
+                                                            </div>
+                                                      </div>
+                                                      <div class="col-md-12 mb-2">
+                                                            <textarea v-model="form.comment" class="form-control"
+                                                                  placeholder="Comment here*.." required></textarea>
+                                                      </div>
+                                                      <div class="col-md-8"></div>
+                                                      <div class="col-md-4 mb-2 text-end">
+                                                            <button @click="postReview"
+                                                                  class="btn btn-primary form-control">Post</button>
+                                                      </div>
+                                                </div>
+                                          </div>
+                                    </div>
+                              </div>
+                              <div class="col-md-12 mt-2">
+                                    <h5>({{ tour?.tour_reviews.length }}) Reviews</h5>
+                                    <hr>
+                                    <div v-if="tour?.tour_reviews.length === 0">No reviews yet.</div>
 
+                                    <div v-for="rev in tour?.tour_reviews" :key="rev.id"
+                                          class="border p-2 mb-2 rounded">
+                                          <div class="flex items-start gap-2 mb-3">
+                                                <!-- User Picture -->
+                                                <img src="/assets/img/person/person-m-11.webp" alt="User"
+                                                      style="width: 50px; border-radius: 50px; float:left;" />
+
+                                                <!-- Right side (name + time + comment) -->
+                                                <div class="flex items-center gap-2" style="float: left;">
+                                                      <strong style="margin-left:7px;">{{ rev.user?.name
+                                                      }}</strong><br>
+                                                      <small class="text-muted block" style="margin-left:7px;">{{
+                                                            formatTime(rev.created_at) }}</small>
+                                                </div> <br><br><br>
+
+
+                                                <div style="margin-left:5px;">
+                                                      <span v-for="n in 5" :key="n">
+                                                            <i v-if="n <= rev.rating"
+                                                                  class="bi bi-star-fill text-warning"></i>
+                                                            <i v-else class="bi bi-star text-muted"></i>
+                                                      </span>
+                                                      <p class="mt-1">{{ rev.comment }}</p>
+                                                </div>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
                   </div>
 
             </section><!-- /Travel Tour Details Section -->
@@ -471,5 +603,65 @@ onMounted(async () => {
       border-top: 1px solid #ccc;
       background-color: #fff;
       color: #555;
+}
+
+.rating {
+      display: flex;
+      width: 100%;
+      justify-content: left;
+      overflow: hidden;
+      flex-direction: row-reverse;
+      position: relative;
+}
+
+.rating-0 {
+      filter: grayscale(100%);
+}
+
+.rating>input {
+      display: none;
+}
+
+.rating>label {
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      margin-top: auto;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='126.729' height='126.73'%3e%3cpath fill='%23e3e3e3' d='M121.215 44.212l-34.899-3.3c-2.2-.2-4.101-1.6-5-3.7l-12.5-30.3c-2-5-9.101-5-11.101 0l-12.4 30.3c-.8 2.1-2.8 3.5-5 3.7l-34.9 3.3c-5.2.5-7.3 7-3.4 10.5l26.3 23.1c1.7 1.5 2.4 3.7 1.9 5.9l-7.9 32.399c-1.2 5.101 4.3 9.3 8.9 6.601l29.1-17.101c1.9-1.1 4.2-1.1 6.1 0l29.101 17.101c4.6 2.699 10.1-1.4 8.899-6.601l-7.8-32.399c-.5-2.2.2-4.4 1.9-5.9l26.3-23.1c3.8-3.5 1.6-10-3.6-10.5z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 76%;
+      transition: 0.3s;
+}
+
+.rating>input:checked~label,
+.rating>input:checked~label~label {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='126.729' height='126.73'%3e%3cpath fill='%23fcd93a' d='M121.215 44.212l-34.899-3.3c-2.2-.2-4.101-1.6-5-3.7l-12.5-30.3c-2-5-9.101-5-11.101 0l-12.4 30.3c-.8 2.1-2.8 3.5-5 3.7l-34.9 3.3c-5.2.5-7.3 7-3.4 10.5l26.3 23.1c1.7 1.5 2.4 3.7 1.9 5.9l-7.9 32.399c-1.2 5.101 4.3 9.3 8.9 6.601l29.1-17.101c1.9-1.1 4.2-1.1 6.1 0l29.101 17.101c4.6 2.699 10.1-1.4 8.899-6.601l-7.8-32.399c-.5-2.2.2-4.4 1.9-5.9l26.3-23.1c3.8-3.5 1.6-10-3.6-10.5z'/%3e%3c/svg%3e");
+}
+
+.rating>input:not(:checked)~label:hover,
+.rating>input:not(:checked)~label:hover~label {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='126.729' height='126.73'%3e%3cpath fill='%23d8b11e' d='M121.215 44.212l-34.899-3.3c-2.2-.2-4.101-1.6-5-3.7l-12.5-30.3c-2-5-9.101-5-11.101 0l-12.4 30.3c-.8 2.1-2.8 3.5-5 3.7l-34.9 3.3c-5.2.5-7.3 7-3.4 10.5l26.3 23.1c1.7 1.5 2.4 3.7 1.9 5.9l-7.9 32.399c-1.2 5.101 4.3 9.3 8.9 6.601l29.1-17.101c1.9-1.1 4.2-1.1 6.1 0l29.101 17.101c4.6 2.699 10.1-1.4 8.899-6.601l-7.8-32.399c-.5-2.2.2-4.4 1.9-5.9l26.3-23.1c3.8-3.5 1.6-10-3.6-10.5z'/%3e%3c/svg%3e");
+}
+
+
+#rating-1:checked~.emoji-wrapper>.emoji {
+      transform: translateY(-100px);
+}
+
+#rating-2:checked~.emoji-wrapper>.emoji {
+      transform: translateY(-200px);
+}
+
+#rating-3:checked~.emoji-wrapper>.emoji {
+      transform: translateY(-300px);
+}
+
+#rating-4:checked~.emoji-wrapper>.emoji {
+      transform: translateY(-400px);
+}
+
+#rating-5:checked~.emoji-wrapper>.emoji {
+      transform: translateY(-500px);
 }
 </style>
