@@ -1,3 +1,34 @@
+<script setup>
+import { onMounted, ref } from 'vue';
+import api from '@/api';
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+
+const faqs = ref([]);
+const activeFaq = ref(null)
+const toggleFaq = (index) => {
+    activeFaq.value = activeFaq.value === index ? null : index
+}
+onMounted(async () => {
+    await fetchData();
+});
+async function fetchData() {
+    try {
+        const resFaqs = await api.get('/faqs');
+
+        if (resFaqs.data?.Success) {
+            faqs.value = resFaqs.data.Data || [];
+        }
+        console.log(faqs);
+
+    } catch (err) {
+        console.error('Fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
+</script>
 <template>
     <main class="main">
 
@@ -26,8 +57,8 @@
                     <div class="col-lg-5" data-aos="fade-up" data-aos-delay="200">
                         <div class="faq-sidebar">
                             <div class="faq-image">
-                                <img src="/assets/img/illustration/illustration-5.webp" alt="FAQ Image" class="img-fluid"
-                                    loading="lazy">
+                                <img src="/assets/img/illustration/illustration-5.webp" alt="FAQ Image"
+                                    class="img-fluid" loading="lazy">
                             </div>
                             <div class="contact-box">
                                 <h3><i class="bi bi-headset"></i> Need Assistance?</h3>
@@ -39,151 +70,20 @@
                     </div>
 
                     <div class="col-lg-7">
-                        <div class="faq-tabs">
-                            <ul class="nav nav-pills mb-4" id="faqTabs-faq" role="tablist" data-aos="fade-up"
-                                data-aos-delay="100">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="general-tab-faq" data-bs-toggle="pill"
-                                        data-bs-target="#general-faq-faq" type="button" role="tab"
-                                        aria-controls="general-faq-faq" aria-selected="true">General Inquiries</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="account-tab-faq" data-bs-toggle="pill"
-                                        data-bs-target="#account-faq-faq" type="button" role="tab"
-                                        aria-controls="account-faq-faq" aria-selected="false">Account Services</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="payment-tab-faq" data-bs-toggle="pill"
-                                        data-bs-target="#payment-faq-faq" type="button" role="tab"
-                                        aria-controls="payment-faq-faq" aria-selected="false">Billing &amp;
-                                        Payments</button>
-                                </li>
-                            </ul>
-
-                            <div class="tab-content" id="faqTabsContent-faq">
-                                <div class="tab-pane fade show active" id="general-faq-faq" role="tabpanel"
-                                    aria-labelledby="general-tab-faq">
-                                    <div class="accordion" id="generalAccordion-faq">
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="150">
-                                            <h3>How do I create a new account?</h3>
-                                            <div class="faq-content">
-                                                <p>Praesent sapien massa, convallis a pellentesque nec, egestas non
-                                                    nisi. Donec sollicitudin molestie malesuada. Vestibulum ac diam sit
-                                                    amet quam vehicula elementum. Curabitur arcu erat, accumsan id
-                                                    imperdiet et, porttitor at sem.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
-                                            <h3>What are the system requirements?</h3>
-                                            <div class="faq-content">
-                                                <p>Vivamus suscipit tortor eget felis porttitor volutpat. Mauris blandit
-                                                    aliquet elit, eget tincidunt nibh pulvinar a. Vestibulum ac diam sit
-                                                    amet quam vehicula elementum sed sit amet dui.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="250">
-                                            <h3>Can I access my data offline?</h3>
-                                            <div class="faq-content">
-                                                <p>Nulla quis lorem ut libero malesuada feugiat. Vestibulum ac diam sit
-                                                    amet quam vehicula elementum sed sit amet dui. Nulla porttitor
-                                                    accumsan tincidunt. Quisque velit nisi, pretium ut lacinia in,
-                                                    elementum id enim.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="300">
-                                            <h3>How do I report a bug or issue?</h3>
-                                            <div class="faq-content">
-                                                <p>Pellentesque in ipsum id orci porta dapibus. Nulla quis lorem ut
-                                                    libero malesuada feugiat. Donec sollicitudin molestie malesuada. Sed
-                                                    porttitor lectus nibh.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="350">
-                                            <h3>What is your data privacy policy?</h3>
-                                            <div class="faq-content">
-                                                <p>Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem.
-                                                    Vestibulum ac diam sit amet quam vehicula elementum. Sed porttitor
-                                                    lectus nibh.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-                                    </div>
+                        <div class="accordion">
+                            <div v-for="(faq, index) in faqs" :key="index" class="faq-item" data-aos="fade-up"
+                                data-aos-delay="150">
+                                <div class="faq-question1" @click="toggleFaq(index)">
+                                    <span>{{ faq?.question }}</span>
+                                    <i :class="['arrow bi bi-chevron-down faq-toggle', { 'open bi bi-chevron-down faq-toggle': activeFaq === index }]"></i>
                                 </div>
-
-                                <div class="tab-pane fade" id="account-faq-faq" role="tabpanel"
-                                    aria-labelledby="account-tab-faq">
-                                    <div class="accordion" id="accountAccordion-faq">
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="150">
-                                            <h3>How do I reset my password?</h3>
-                                            <div class="faq-content">
-                                                <p>Curabitur non nulla sit amet nisl tempus convallis quis ac lectus.
-                                                    Vivamus magna justo, lacinia eget consectetur sed, convallis at
-                                                    tellus. Nulla quis lorem ut libero malesuada feugiat.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
-                                            <h3>How to update account information?</h3>
-                                            <div class="faq-content">
-                                                <p>Donec rutrum congue leo eget malesuada. Lorem ipsum dolor sit amet,
-                                                    consectetur adipiscing elit. Praesent sapien massa, convallis a
-                                                    pellentesque nec, egestas non nisi.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-                                    </div>
+                                <div v-if="activeFaq === index" class="faq-content1">
+                                    <span v-html="faq?.answer"></span>
                                 </div>
-
-                                <div class="tab-pane fade" id="payment-faq-faq" role="tabpanel"
-                                    aria-labelledby="payment-tab-faq">
-                                    <div class="accordion" id="paymentAccordion-faq">
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="150">
-                                            <h3>What payment methods are accepted?</h3>
-                                            <div class="faq-content">
-                                                <p>Pellentesque in ipsum id orci porta dapibus. Sed porttitor lectus
-                                                    nibh. Cras ultricies ligula sed magna dictum porta. Curabitur
-                                                    aliquet quam id dui posuere blandit. Vivamus magna justo, lacinia
-                                                    eget consectetur sed, convallis at tellus.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
-                                            <h3>When will my payment be processed?</h3>
-                                            <div class="faq-content">
-                                                <p>Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a. Nulla
-                                                    porttitor accumsan tincidunt. Curabitur non nulla sit amet nisl
-                                                    tempus convallis quis ac lectus. Quisque velit nisi, pretium ut
-                                                    lacinia in.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-
-                                        <div class="faq-item" data-aos="fade-up" data-aos-delay="250">
-                                            <h3>Can I get a refund for my purchase?</h3>
-                                            <div class="faq-content">
-                                                <p>Vivamus magna justo, lacinia eget consectetur sed, convallis at
-                                                    tellus. Praesent sapien massa, convallis a pellentesque nec, egestas
-                                                    non nisi. Donec sollicitudin molestie malesuada.</p>
-                                            </div>
-                                            <i class="bi bi-chevron-down faq-toggle"></i>
-                                        </div><!-- End FAQ Item-->
-                                    </div>
-                                </div>
-                            </div>
+                            </div><!-- End FAQ Item-->
                         </div>
                     </div>
                 </div>
-
             </div>
 
         </section><!-- /Faq Section -->
@@ -191,3 +91,38 @@
     </main>
 
 </template>
+<style>
+.faq-item {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.faq-question1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background-color: #fff;
+    cursor: pointer;
+    color: #000;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.arrow {
+    transition: transform 0.3s ease;
+}
+
+.arrow.open {
+    transform: rotate(180deg);
+}
+
+.faq-content1 {
+    padding: 10px 14px;
+    border-top: 1px solid #ccc;
+    background-color: #fff;
+    color: #555;
+}
+</style>

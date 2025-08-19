@@ -159,7 +159,7 @@ const postReview = async () => {
                   :style="{ backgroundImage: `url(${tour?.thumbnail_url})` }">
                   <div class="container position-relative">
                         <h1>{{ tour?.title }}</h1>
-                        <p>{{ tour?.short_description }}</p>
+                        <p v-html="tour?.short_description"></p>
                         <nav class="breadcrumbs">
                               <ol>
                                     <li><router-link to="/">Home</router-link></li>
@@ -265,11 +265,11 @@ const postReview = async () => {
                                           </div>
                                           <h4>Overview</h4>
                                           <hr>
-                                          {{ tour?.overview }}
+                                          <p v-html="tour?.overview"></p>
                                           <br> <br>
                                           <h4>Short Description</h4>
                                           <hr>
-                                          {{ tour?.short_description }}
+                                          <p v-html="tour?.short_description"></p>
                                     </div>
                                     <div class="col-lg-4">
                                           <div class="tour-highlights">
@@ -328,7 +328,7 @@ const postReview = async () => {
                                                       <div class="day-number">Day {{ item.day_number }}</div>
                                                       <div class="day-content">
                                                             <h4>{{ item.title }}</h4>
-                                                            <p>{{ item.description }}</p>
+                                                            <p v-html="item.description"></p>
 
                                                             <!-- Optional image if available -->
                                                             <div v-if="item.image_url" class="day-image">
@@ -345,7 +345,7 @@ const postReview = async () => {
                                                 <div class="card-body">
                                                       <h4>Highlights</h4>
                                                       <hr>
-                                                      {{ tour?.highlights }}
+                                                      <p v-html="tour?.highlights"></p>
                                                       <!-- <ul>
                                                       <li><i class="bi bi-check-circle"></i> 4-Star Boutique Hotels</li>
                                                       <li><i class="bi bi-check-circle"></i> Expert Local Guides</li>
@@ -516,7 +516,7 @@ const postReview = async () => {
                                                 class="border p-2 mb-2 rounded">
                                                 <div class="flex items-start gap-2 mb-3">
                                                       <!-- User Picture -->
-                                                      <img src="/assets/img/person/person-m-11.webp" alt="User"
+                                                      <img src="/assets/img/person/demoUser.png" alt="User"
                                                             style="width: 50px; border-radius: 50px; float:left;" />
 
                                                       <!-- Right side (name + time + comment) -->

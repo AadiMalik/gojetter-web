@@ -113,7 +113,7 @@ const formatDate = (dateStr) => {
 
                                     <div class="article-meta" data-aos="fade-up" data-aos-delay="200">
                                           <div class="author">
-                                                <img src="/dist/assets/img/person/demoUser.png" alt="Author"
+                                                <img src="/assets/img/person/demoUser.png" alt="Author"
                                                       class="author-img">
                                                 <div class="author-info">
                                                       <h4>{{ blog?.author }}</h4>

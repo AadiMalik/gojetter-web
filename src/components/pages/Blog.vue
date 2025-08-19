@@ -145,7 +145,7 @@ const formatDate = (dateStr) => {
                                     </h2>
 
                                     <div class="d-flex align-items-center">
-                                        <img src="/dist/assets/img/person/demoUser.png" alt=""
+                                        <img src="/assets/img/person/demoUser.png" alt=""
                                             class="img-fluid post-author-img flex-shrink-0">
                                         <div class="post-meta">
                                             <p class="post-author">{{ blog.author }}</p>
