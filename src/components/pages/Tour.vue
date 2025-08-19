@@ -424,27 +424,29 @@ async function fetchTours() {
                                 <div v-if="!des.tours.length" class="text-center">No tours found.</div>
                             </div>
                             <div class="col-lg-4 col-md-6 mb-4" v-for="tour in des.tours" :key="tour.id">
-                                <div class="tour-card">
-                                    <div class="tour-image">
-                                        <img :src="tour.thumbnail_url" alt="Tour image" class="img-fluid" />
-                                        <div class="tour-price">
-                                            {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
-                                                ? `$${tour.tour_date[0].price}`
-                                                : '$0'
-                                            }}
+                                <router-link :to="`/tour-detail/${tour.slug}`">
+                                    <div class="tour-card">
+                                        <div class="tour-image">
+                                            <img :src="tour.thumbnail_url" :alt="tour.title" class="img-fluid" />
+                                            <div class="tour-price">
+                                                {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
+                                                    ? `$${tour.tour_date[0].price}`
+                                                    : '$0'
+                                                }}
+                                            </div>
+                                        </div>
+                                        <div class="tour-content">
+                                            <h4 class="one-line">{{ tour.title }}</h4>
+                                            <p v-html="tour.short_description" class="one-line"></p>
+                                            <div class="tour-details">
+                                                <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
+                                            </div>
+                                            <router-link :to="`/tour-detail/${tour.slug}`" class="bt-outline-primary">
+                                                View Tour
+                                            </router-link>
                                         </div>
                                     </div>
-                                    <div class="tour-content">
-                                        <h4 class="one-line">{{ tour.title }}</h4>
-                                        <p v-html="tour.short_description" class="one-line"></p>
-                                        <div class="tour-details">
-                                            <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
-                                        </div>
-                                        <router-link :to="`/tour-detail/${tour.slug}`" class="bt-outline-primary">
-                                            View Tour
-                                        </router-link>
-                                    </div>
-                                </div>
+                                </router-link>
                             </div>
                         </div>
                     </div>

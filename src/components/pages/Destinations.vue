@@ -172,7 +172,7 @@ async function fetchToursAndActivity() {
                                 class="col-lg-4 col-md-6 destination-item isotope-item filter-coastal">
                                 <router-link :to="`/tour-detail/${tour?.slug}`" class="destination-tile">
                                     <div class="tile-image">
-                                        <img :src="tour.thumbnail_url" alt="{{ tour.title }}" class="img-fluid"
+                                        <img :src="tour.thumbnail_url" :alt="tour.title"  class="img-fluid"
                                             loading="lazy">
                                         <div class="overlay-content">
                                             <span class="destination-tag luxury">{{ tour?.destination?.name }}</span>

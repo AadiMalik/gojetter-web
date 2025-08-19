@@ -20,135 +20,135 @@ const adults = ref(1)
 // Active FAQ index
 const activeFaq = ref(null)
 const toggleFaq = (index) => {
-  activeFaq.value = activeFaq.value === index ? null : index
+      activeFaq.value = activeFaq.value === index ? null : index
 }
 
 const selectedDate = computed(() => {
-  return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
+      return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
 })
 
 const formatDate = (dateStr) => {
-  const options = { day: '2-digit', month: 'short', year: 'numeric' }
-  return new Date(dateStr).toLocaleDateString('en-GB', options)
+      const options = { day: '2-digit', month: 'short', year: 'numeric' }
+      return new Date(dateStr).toLocaleDateString('en-GB', options)
 }
 const formatTime = (dateStr) => {
-  return dayjs(dateStr).fromNow()
+      return dayjs(dateStr).fromNow()
 }
 
 const isPastCutoff = (date) => {
-  const start = new Date(date.start_date)
-  const cutoffDate = new Date(start)
-  cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
+      const start = new Date(date.start_date)
+      const cutoffDate = new Date(start)
+      cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
-  return today > cutoffDate
+      return today > cutoffDate
 }
 
 const bookNow = () => {
-  if (!selectedDate.value) {
-    alert('Please select a date.')
-    return
-  }
+      if (!selectedDate.value) {
+            alert('Please select a date.')
+            return
+      }
 
-  if (isPastCutoff(selectedDate.value)) {
-    alert(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
-    return
-  }
+      if (isPastCutoff(selectedDate.value)) {
+            alert(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
+            return
+      }
 
-  router.push({
-    path: '/checkout-tour',
-    query: {
-      date_id: selectedDate.value.id,
-      tour_id: selectedDate.value.tour_id,
-      adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
-    }
-  })
+      router.push({
+            path: '/checkout-tour',
+            query: {
+                  date_id: selectedDate.value.id,
+                  tour_id: selectedDate.value.tour_id,
+                  adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
+            }
+      })
 }
 
 /* -------------------------
    ⭐ Fetch Tour + Related Tours
 -------------------------- */
 const fetchTour = async () => {
-  const slug = route.params.slug
-  if (!slug) {
-    router.push('/tours')
-    return
-  }
+      const slug = route.params.slug
+      if (!slug) {
+            router.push('/tours')
+            return
+      }
 
-  loading.value = true
-  try {
-    const res = await api.get(`/tour-by-slug/${slug}`)
-    if (res.data?.Success && res.data?.Data) {
-      tour.value = res.data.Data.detail
-      // limit to 3 related tours
-      related_tours.value = res.data.Data.related_tours.slice(0, 3)
-    } else {
-      router.push('/tours')
-    }
-  } catch (error) {
-    console.error(error)
-    router.push('/tours')
-  } finally {
-    loading.value = false
-  }
+      loading.value = true
+      try {
+            const res = await api.get(`/tour-by-slug/${slug}`)
+            if (res.data?.Success && res.data?.Data) {
+                  tour.value = res.data.Data.detail
+                  // limit to 3 related tours
+                  related_tours.value = res.data.Data.related_tours.slice(0, 3)
+            } else {
+                  router.push('/tours')
+            }
+      } catch (error) {
+            console.error(error)
+            router.push('/tours')
+      } finally {
+            loading.value = false
+      }
 }
 
 onMounted(fetchTour)
 
 // 👀 Watch for route slug change
 watch(
-  () => route.params.slug,
-  () => {
-    fetchTour()
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth' // smooth scrolling
-    })
-  }
+      () => route.params.slug,
+      () => {
+            fetchTour()
+            window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth' // smooth scrolling
+            })
+      }
 )
 
 /* -------------------------
    ⭐ Reviews (inline refresh)
 -------------------------- */
 const form = ref({
-  rating: null,
-  comment: ""
+      rating: null,
+      comment: ""
 })
 
 const postReview = async () => {
-  if (!form.value.rating) {
-    toast.error("Please select a rating.")
-    return
-  }
-  try {
-    const res = await api.post("/save-tour-review", {
-      tour_id: tour.value?.id,
-      rating: form.value.rating,
-      comment: form.value.comment
-    })
+      if (!form.value.rating) {
+            toast.error("Please select a rating.")
+            return
+      }
+      try {
+            const res = await api.post("/save-tour-review", {
+                  tour_id: tour.value?.id,
+                  rating: form.value.rating,
+                  comment: form.value.comment
+            })
 
-    if (res.data?.Success && res.data?.Data) {
-      // Push the new review into the same array
-      tour.value.tour_reviews.unshift(res.data.Data)
+            if (res.data?.Success && res.data?.Data) {
+                  // Push the new review into the same array
+                  tour.value.tour_reviews.unshift(res.data.Data)
 
-      // Reset form
-      form.value.rating = null
-      form.value.comment = ""
-    } else {
-      toast.error(res.data?.Message || "Something went wrong")
-    }
-  } catch (err) {
-    console.error(err)
-    if (err.response?.status === 401) {
-      router.push({
-        path: "/login",
-        query: { redirect: route.fullPath }
-      })
-    }
-    toast.error("Error while saving review")
-  }
+                  // Reset form
+                  form.value.rating = null
+                  form.value.comment = ""
+            } else {
+                  toast.error(res.data?.Message || "Something went wrong")
+            }
+      } catch (err) {
+            console.error(err)
+            if (err.response?.status === 401) {
+                  router.push({
+                        path: "/login",
+                        query: { redirect: route.fullPath }
+                  })
+            }
+            toast.error("Error while saving review")
+      }
 }
 </script>
 
@@ -453,7 +453,8 @@ const postReview = async () => {
                         </div>
 
                         <!-- Gallery -->
-                        <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600" v-if="tour?.tour_image.length">
+                        <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600"
+                              v-if="tour?.tour_image.length">
                               <h3>Gallery</h3>
                               <hr>
                               <div class="gallery-grid">
@@ -557,32 +558,34 @@ const postReview = async () => {
                                     <div class="row">
                                           <div class="col-lg-4 col-md-6 mb-4" v-for="tour in related_tours"
                                                 :key="tour.id">
-                                                <div class="tour-card">
-                                                      <div class="tour-image">
-                                                            <img :src="tour.thumbnail_url" alt="Tour image"
-                                                                  class="img-fluid" />
-                                                            <div class="tour-price">
-                                                                  {{ Array.isArray(tour?.tour_date) &&
-                                                                        tour.tour_date.length > 0
-                                                                        ? `$${tour.tour_date[0].price}`
-                                                                        : '$0'
-                                                                  }}
+                                                <router-link :to="`/tour-detail/${tour.slug}`">
+                                                      <div class="tour-card">
+                                                            <div class="tour-image">
+                                                                  <img :src="tour.thumbnail_url" alt="Tour image"
+                                                                        class="img-fluid" />
+                                                                  <div class="tour-price">
+                                                                        {{ Array.isArray(tour?.tour_date) &&
+                                                                              tour.tour_date.length > 0
+                                                                              ? `$${tour.tour_date[0].price}`
+                                                                              : '$0'
+                                                                        }}
+                                                                  </div>
+                                                            </div>
+                                                            <div class="tour-content">
+                                                                  <h4 class="one-line">{{ tour.title }}</h4>
+                                                                  <p v-html="tour.short_description" class="one-line">
+                                                                  </p>
+                                                                  <div class="tour-details">
+                                                                        <span><i class="bi bi-clock"></i> {{
+                                                                              tour.duration }}</span>
+                                                                  </div>
+                                                                  <router-link :to="`/tour-detail/${tour.slug}`"
+                                                                        class="bt-outline-primary">
+                                                                        View Tour
+                                                                  </router-link>
                                                             </div>
                                                       </div>
-                                                      <div class="tour-content">
-                                                            <h4 class="one-line">{{ tour.title }}</h4>
-                                                            <p v-html="tour.short_description" class="one-line">
-                                                            </p>
-                                                            <div class="tour-details">
-                                                                  <span><i class="bi bi-clock"></i> {{
-                                                                        tour.duration }}</span>
-                                                            </div>
-                                                            <router-link :to="`/tour-detail/${tour.slug}`"
-                                                                  class="bt-outline-primary">
-                                                                  View Tour
-                                                            </router-link>
-                                                      </div>
-                                                </div>
+                                                </router-link>
                                           </div>
                                     </div>
                               </div>

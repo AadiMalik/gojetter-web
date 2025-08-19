@@ -425,11 +425,13 @@ async function fetchActivities() {
                                 <div v-if="!des.activities.length" class="text-center">No activities found.</div>
                             </div>
                             <div class="col-lg-4 col-md-6 mb-4" v-for="activity in des.activities" :key="activity.id">
+                                <router-link :to="`/activity-detail/${activity.slug}`">
                                 <div class="tour-card">
                                     <div class="tour-image">
                                         <img :src="activity.thumbnail_url" alt="Tour image" class="img-fluid" />
                                         <div class="tour-price">
-                                            {{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
+                                            {{ Array.isArray(activity?.activity_date) && activity.activity_date.length >
+                                                0
                                                 ? `$${activity.activity_date[0].price}`
                                                 : '$0'
                                             }}
@@ -441,11 +443,13 @@ async function fetchActivities() {
                                         <div class="tour-details">
                                             <span><i class="bi bi-clock"></i> {{ activity.duration }}</span>
                                         </div>
-                                        <router-link :to="`/activity-detail/${activity.slug}`" class="bt-outline-primary">
+                                        <router-link :to="`/activity-detail/${activity.slug}`"
+                                            class="bt-outline-primary">
                                             View Activity
                                         </router-link>
                                     </div>
                                 </div>
+                                </router-link>
                             </div>
                         </div>
                     </div>
