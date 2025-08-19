@@ -48,12 +48,12 @@ const isPastCutoff = (date) => {
 
 const bookNow = () => {
       if (!selectedDate.value) {
-            alert('Please select a date.')
+            toast.error('Please select a date.')
             return
       }
 
       if (isPastCutoff(selectedDate.value)) {
-            alert(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
+            toast.error(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
             return
       }
 
@@ -289,7 +289,11 @@ const postReview = async () => {
                                                             class="d-none" />
                                                       {{ formatDate(date.start_date) }} - {{
                                                             formatDate(date.end_date) }} <br />
-                                                      <b>${{ date.price }}</b>
+                                                      <b>${{ (date.discount_price &&
+                                                                  date.discount_price > 0
+                                                            ? date.discount_price
+                                                            : date.price)
+                                                            }}</b>
                                                       {{ date.price_type === 'per_person' ? 'per person' : 'Group'
                                                       }}
 
@@ -564,11 +568,24 @@ const postReview = async () => {
                                                                   <img :src="tour.thumbnail_url" alt="Tour image"
                                                                         class="img-fluid" />
                                                                   <div class="tour-price">
-                                                                        {{ Array.isArray(tour?.tour_date) &&
-                                                                              tour.tour_date.length > 0
-                                                                              ? `$${tour.tour_date[0].price}`
-                                                                              : '$0'
-                                                                        }}
+                                                                        <template
+                                                                              v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
+                                                                              <template
+                                                                                    v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
+                                                                                    <del class="text-danger">${{
+                                                                                          tour.tour_date[0].price
+                                                                                    }}</del> <br>
+                                                                                    <span class="text-white">${{
+                                                                                          tour.tour_date[0].discount_price
+                                                                                    }}</span>
+                                                                              </template>
+                                                                              <template v-else>
+                                                                                    ${{ tour.tour_date[0].price }}
+                                                                              </template>
+                                                                        </template>
+                                                                        <template v-else>
+                                                                              $0
+                                                                        </template>
                                                                   </div>
                                                             </div>
                                                             <div class="tour-content">

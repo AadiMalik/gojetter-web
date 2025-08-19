@@ -172,7 +172,7 @@ async function fetchToursAndActivity() {
                                 class="col-lg-4 col-md-6 destination-item isotope-item filter-coastal">
                                 <router-link :to="`/tour-detail/${tour?.slug}`" class="destination-tile">
                                     <div class="tile-image">
-                                        <img :src="tour.thumbnail_url" :alt="tour.title"  class="img-fluid"
+                                        <img :src="tour.thumbnail_url" :alt="tour.title" class="img-fluid"
                                             loading="lazy">
                                         <div class="overlay-content">
                                             <span class="destination-tag luxury">{{ tour?.destination?.name }}</span>
@@ -183,11 +183,15 @@ async function fetchToursAndActivity() {
                                                     <span class="tours-available"><i class="bi bi-map"></i> {{
                                                         tour?.duration
                                                         }}</span>
-                                                    <span class="starting-price">${{ Array.isArray(tour?.tour_date) &&
-                                                        tour?.tour_date?.length > 0
-                                                        ? `${tour?.tour_date[0]?.price}`
-                                                        : '0'
-                                                    }}</span>
+                                                    <span class="starting-price">
+                                                        ${{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
+                                                            ? (tour.tour_date[0].discount_price &&
+                                                                tour.tour_date[0].discount_price > 0
+                                                                ? tour.tour_date[0].discount_price
+                                                                : tour.tour_date[0].price)
+                                                            : 0
+                                                        }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -223,7 +227,8 @@ async function fetchToursAndActivity() {
                                         <img :src="activity.thumbnail_url" alt="{{ activity.title }}" class="img-fluid"
                                             loading="lazy">
                                         <div class="overlay-content">
-                                            <span class="destination-tag luxury">{{ activity?.destination?.name }}</span>
+                                            <span class="destination-tag luxury">{{ activity?.destination?.name
+                                                }}</span>
                                             <div class="destination-info">
                                                 <h4 class="one-line">{{ activity?.title }}</h4>
                                                 <p v-html="activity?.short_description" class="one-line"></p>
@@ -231,11 +236,15 @@ async function fetchToursAndActivity() {
                                                     <span class="tours-available"><i class="bi bi-map"></i> {{
                                                         activity?.duration
                                                         }}</span>
-                                                    <span class="starting-price">${{ Array.isArray(activity?.activity_date) &&
-                                                        activity?.activity_date?.length > 0
-                                                        ? `${activity?.activity_date[0]?.price}`
-                                                        : '0'
-                                                        }}</span>
+                                                    <span class="starting-price">
+                                                        ${{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
+                                                            ? (activity.activity_date[0].discount_price &&
+                                                                activity.activity_date[0].discount_price > 0
+                                                        ? activity.activity_date[0].discount_price
+                                                        : activity.activity_date[0].price)
+                                                        : 0
+                                                        }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

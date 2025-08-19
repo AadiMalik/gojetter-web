@@ -20,135 +20,135 @@ const adults = ref(1)
 // Active FAQ index
 const activeFaq = ref(null)
 const toggleFaq = (index) => {
-  activeFaq.value = activeFaq.value === index ? null : index
+      activeFaq.value = activeFaq.value === index ? null : index
 }
 
 const selectedDate = computed(() => {
-  return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
+      return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
 })
 
 const formatDate = (dateStr) => {
-  const options = { day: '2-digit', month: 'short', year: 'numeric' }
-  return new Date(dateStr).toLocaleDateString('en-GB', options)
+      const options = { day: '2-digit', month: 'short', year: 'numeric' }
+      return new Date(dateStr).toLocaleDateString('en-GB', options)
 }
 const formatTime = (dateStr) => {
-  return dayjs(dateStr).fromNow()
+      return dayjs(dateStr).fromNow()
 }
 
 const isPastCutoff = (date) => {
-  const start = new Date(date.start_date)
-  const cutoffDate = new Date(start)
-  cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
+      const start = new Date(date.start_date)
+      const cutoffDate = new Date(start)
+      cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
-  return today > cutoffDate
+      return today > cutoffDate
 }
 
 const bookNow = () => {
-  if (!selectedDate.value) {
-    alert('Please select a date.')
-    return
-  }
+      if (!selectedDate.value) {
+            toast.error('Please select a date.')
+            return
+      }
 
-  if (isPastCutoff(selectedDate.value)) {
-    alert(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
-    return
-  }
+      if (isPastCutoff(selectedDate.value)) {
+           toast.error(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
+            return
+      }
 
-  router.push({
-    path: '/checkout-tour',
-    query: {
-      date_id: selectedDate.value.id,
-      tour_id: selectedDate.value.tour_id,
-      adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
-    }
-  })
+      router.push({
+            path: '/checkout-tour',
+            query: {
+                  date_id: selectedDate.value.id,
+                  tour_id: selectedDate.value.tour_id,
+                  adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
+            }
+      })
 }
 
 /* -------------------------
    ⭐ Fetch Tour + Related Tours
 -------------------------- */
 const fetchTour = async () => {
-  const slug = route.params.slug
-  if (!slug) {
-    router.push('/tours')
-    return
-  }
+      const slug = route.params.slug
+      if (!slug) {
+            router.push('/tours')
+            return
+      }
 
-  loading.value = true
-  try {
-    const res = await api.get(`/tour-by-slug/${slug}`)
-    if (res.data?.Success && res.data?.Data) {
-      tour.value = res.data.Data.detail
-      // limit to 3 related tours
-      related_tours.value = res.data.Data.related_tours.slice(0, 3)
-    } else {
-      router.push('/tours')
-    }
-  } catch (error) {
-    console.error(error)
-    router.push('/tours')
-  } finally {
-    loading.value = false
-  }
+      loading.value = true
+      try {
+            const res = await api.get(`/tour-by-slug/${slug}`)
+            if (res.data?.Success && res.data?.Data) {
+                  tour.value = res.data.Data.detail
+                  // limit to 3 related tours
+                  related_tours.value = res.data.Data.related_tours.slice(0, 3)
+            } else {
+                  router.push('/tours')
+            }
+      } catch (error) {
+            console.error(error)
+            router.push('/tours')
+      } finally {
+            loading.value = false
+      }
 }
 
 onMounted(fetchTour)
 
 // 👀 Watch for route slug change
 watch(
-  () => route.params.slug,
-  () => {
-    fetchTour()
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth' // smooth scrolling
-    })
-  }
+      () => route.params.slug,
+      () => {
+            fetchTour()
+            window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth' // smooth scrolling
+            })
+      }
 )
 
 /* -------------------------
    ⭐ Reviews (inline refresh)
 -------------------------- */
 const form = ref({
-  rating: null,
-  comment: ""
+      rating: null,
+      comment: ""
 })
 
 const postReview = async () => {
-  if (!form.value.rating) {
-    toast.error("Please select a rating.")
-    return
-  }
-  try {
-    const res = await api.post("/save-tour-review", {
-      tour_id: tour.value?.id,
-      rating: form.value.rating,
-      comment: form.value.comment
-    })
+      if (!form.value.rating) {
+            toast.error("Please select a rating.")
+            return
+      }
+      try {
+            const res = await api.post("/save-tour-review", {
+                  tour_id: tour.value?.id,
+                  rating: form.value.rating,
+                  comment: form.value.comment
+            })
 
-    if (res.data?.Success && res.data?.Data) {
-      // Push the new review into the same array
-      tour.value.tour_reviews.unshift(res.data.Data)
+            if (res.data?.Success && res.data?.Data) {
+                  // Push the new review into the same array
+                  tour.value.tour_reviews.unshift(res.data.Data)
 
-      // Reset form
-      form.value.rating = null
-      form.value.comment = ""
-    } else {
-      toast.error(res.data?.Message || "Something went wrong")
-    }
-  } catch (err) {
-    console.error(err)
-    if (err.response?.status === 401) {
-      router.push({
-        path: "/login",
-        query: { redirect: route.fullPath }
-      })
-    }
-    toast.error("Error while saving review")
-  }
+                  // Reset form
+                  form.value.rating = null
+                  form.value.comment = ""
+            } else {
+                  toast.error(res.data?.Message || "Something went wrong")
+            }
+      } catch (err) {
+            console.error(err)
+            if (err.response?.status === 401) {
+                  router.push({
+                        path: "/login",
+                        query: { redirect: route.fullPath }
+                  })
+            }
+            toast.error("Error while saving review")
+      }
 }
 </script>
 
@@ -159,7 +159,7 @@ const postReview = async () => {
                   :style="{ backgroundImage: `url(${tour?.thumbnail_url})` }">
                   <div class="container position-relative">
                         <h1>{{ tour?.title }}</h1>
-                        <p>{{ tour?.short_description }}</p>
+                        <p v-html="tour?.short_description"></p>
                         <nav class="breadcrumbs">
                               <ol>
                                     <li><router-link to="/">Home</router-link></li>
@@ -265,11 +265,11 @@ const postReview = async () => {
                                           </div>
                                           <h4>Overview</h4>
                                           <hr>
-                                          {{ tour?.overview }}
+                                          <p v-html="tour?.overview"></p>
                                           <br> <br>
                                           <h4>Short Description</h4>
                                           <hr>
-                                          {{ tour?.short_description }}
+                                          <p v-html="tour?.short_description"></p>
                                     </div>
                                     <div class="col-lg-4">
                                           <div class="tour-highlights">
@@ -289,7 +289,11 @@ const postReview = async () => {
                                                             class="d-none" />
                                                       {{ formatDate(date.start_date) }} - {{
                                                             formatDate(date.end_date) }} <br />
-                                                      <b>${{ date.price }}</b>
+                                                      <b>${{ (date.discount_price &&
+                                                                  date.discount_price > 0
+                                                            ? date.discount_price
+                                                            : date.price)
+                                                            }}</b>
                                                       {{ date.price_type === 'per_person' ? 'per person' : 'Group'
                                                       }}
 
@@ -328,7 +332,7 @@ const postReview = async () => {
                                                       <div class="day-number">Day {{ item.day_number }}</div>
                                                       <div class="day-content">
                                                             <h4>{{ item.title }}</h4>
-                                                            <p>{{ item.description }}</p>
+                                                            <p v-html="item.description"></p>
 
                                                             <!-- Optional image if available -->
                                                             <div v-if="item.image_url" class="day-image">
@@ -345,7 +349,7 @@ const postReview = async () => {
                                                 <div class="card-body">
                                                       <h4>Highlights</h4>
                                                       <hr>
-                                                      {{ tour?.highlights }}
+                                                      <p v-html="tour?.highlights"></p>
                                                       <!-- <ul>
                                                       <li><i class="bi bi-check-circle"></i> 4-Star Boutique Hotels</li>
                                                       <li><i class="bi bi-check-circle"></i> Expert Local Guides</li>
@@ -453,7 +457,8 @@ const postReview = async () => {
                         </div>
 
                         <!-- Gallery -->
-                        <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600" v-if="tour?.tour_image.length">
+                        <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600"
+                              v-if="tour?.tour_image.length">
                               <h3>Gallery</h3>
                               <hr>
                               <div class="gallery-grid">
@@ -516,7 +521,7 @@ const postReview = async () => {
                                                 class="border p-2 mb-2 rounded">
                                                 <div class="flex items-start gap-2 mb-3">
                                                       <!-- User Picture -->
-                                                      <img src="/assets/img/person/person-m-11.webp" alt="User"
+                                                      <img src="/assets/img/person/demoUser.png" alt="User"
                                                             style="width: 50px; border-radius: 50px; float:left;" />
 
                                                       <!-- Right side (name + time + comment) -->
@@ -557,32 +562,47 @@ const postReview = async () => {
                                     <div class="row">
                                           <div class="col-lg-4 col-md-6 mb-4" v-for="tour in related_tours"
                                                 :key="tour.id">
-                                                <div class="tour-card">
-                                                      <div class="tour-image">
-                                                            <img :src="tour.thumbnail_url" alt="Tour image"
-                                                                  class="img-fluid" />
-                                                            <div class="tour-price">
-                                                                  {{ Array.isArray(tour?.tour_date) &&
-                                                                        tour.tour_date.length > 0
-                                                                        ? `$${tour.tour_date[0].price}`
-                                                                        : '$0'
-                                                                  }}
+                                                <router-link :to="`/tour-detail/${tour.slug}`">
+                                                      <div class="tour-card">
+                                                            <div class="tour-image">
+                                                                  <img :src="tour.thumbnail_url" alt="Tour image"
+                                                                        class="img-fluid" />
+                                                                  <div class="tour-price">
+                                                                        <template
+                                                                              v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
+                                                                              <template
+                                                                                    v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
+                                                                                    <del class="text-danger">${{
+                                                                                          tour.tour_date[0].price
+                                                                                    }}</del> <br>
+                                                                                    <span class="text-white">${{
+                                                                                          tour.tour_date[0].discount_price
+                                                                                    }}</span>
+                                                                              </template>
+                                                                              <template v-else>
+                                                                                    ${{ tour.tour_date[0].price }}
+                                                                              </template>
+                                                                        </template>
+                                                                        <template v-else>
+                                                                              $0
+                                                                        </template>
+                                                                  </div>
+                                                            </div>
+                                                            <div class="tour-content">
+                                                                  <h4 class="one-line">{{ tour.title }}</h4>
+                                                                  <p v-html="tour.short_description" class="one-line">
+                                                                  </p>
+                                                                  <div class="tour-details">
+                                                                        <span><i class="bi bi-clock"></i> {{
+                                                                              tour.duration }}</span>
+                                                                  </div>
+                                                                  <router-link :to="`/tour-detail/${tour.slug}`"
+                                                                        class="bt-outline-primary">
+                                                                        View Tour
+                                                                  </router-link>
                                                             </div>
                                                       </div>
-                                                      <div class="tour-content">
-                                                            <h4 class="one-line">{{ tour.title }}</h4>
-                                                            <p v-html="tour.short_description" class="one-line">
-                                                            </p>
-                                                            <div class="tour-details">
-                                                                  <span><i class="bi bi-clock"></i> {{
-                                                                        tour.duration }}</span>
-                                                            </div>
-                                                            <router-link :to="`/tour-detail/${tour.slug}`"
-                                                                  class="bt-outline-primary">
-                                                                  View Tour
-                                                            </router-link>
-                                                      </div>
-                                                </div>
+                                                </router-link>
                                           </div>
                                     </div>
                               </div>

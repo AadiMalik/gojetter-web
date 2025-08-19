@@ -429,10 +429,21 @@ async function fetchTours() {
                                         <div class="tour-image">
                                             <img :src="tour.thumbnail_url" :alt="tour.title" class="img-fluid" />
                                             <div class="tour-price">
-                                                {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
-                                                    ? `$${tour.tour_date[0].price}`
-                                                    : '$0'
-                                                }}
+                                                <template
+                                                    v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
+                                                    <template
+                                                        v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
+                                                        <del class="text-danger">${{ tour.tour_date[0].price }}</del> <br>
+                                                        <span class="text-white">${{ tour.tour_date[0].discount_price
+                                                            }}</span>
+                                                    </template>
+                                                    <template v-else>
+                                                        ${{ tour.tour_date[0].price }}
+                                                    </template>
+                                                </template>
+                                                <template v-else>
+                                                    $0
+                                                </template>
                                             </div>
                                         </div>
                                         <div class="tour-content">
