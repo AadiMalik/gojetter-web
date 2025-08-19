@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import api from '@/api';
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 
 const data = ref([]);
 const categories = ref([]);
@@ -16,11 +18,18 @@ const loading = ref(true);
 onMounted(async () => {
     await fetchData();
 });
+function isLoggedIn() {
+    return !!localStorage.getItem("token");
+}
 
 async function fetchData() {
     try {
+        const headers = {};
+        if (isLoggedIn()) {
+            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
+        }
         const [activitiesRes, categoriesRes] = await Promise.all([
-            api.get('/activity-list'),
+            api.get('/activity-list', { headers }),
             api.get('/tour-category-list')
         ]);
 
@@ -44,14 +53,17 @@ async function fetchData() {
 async function fetchActivities() {
     try {
         loading.value = true;
-
+        const headers = {};
+        if (isLoggedIn()) {
+            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
+        }
         const params = {};
         if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
 
-        const res = await api.get('/activity-list', { params });
+        const res = await api.get('/activity-list', { params, headers });
 
         if (res.data?.Success) {
             data.value = res.data.Data.data || [];
@@ -61,6 +73,33 @@ async function fetchActivities() {
         console.error('Filter fetch error:', err);
     } finally {
         loading.value = false;
+    }
+}
+// 👉 Add to wishlist
+async function toggleWishlist(activity) {
+    if (!isLoggedIn()) {
+        router.push('/login');
+        return;
+    }
+
+    if (activity.is_wishlist === 1) {
+        toast.error("This activity is already in wishlist");
+        return;
+    }
+
+    try {
+        const res = await api.post(
+            '/save-wishlist',
+            { activity_id: activity.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        if (res.data?.Success) {
+            activity.is_wishlist = 1; // mark as added
+            toast.success(res.data?.Message);
+        }
+    } catch (err) {
+        console.error("Wishlist error:", err);
     }
 }
 </script>
@@ -425,7 +464,7 @@ async function fetchActivities() {
                                 <div v-if="!des.activities.length" class="text-center">No activities found.</div>
                             </div>
                             <div class="col-lg-4 col-md-6 mb-4" v-for="activity in des.activities" :key="activity.id">
-                                <router-link :to="`/activity-detail/${activity.slug}`">
+                                <!-- <router-link :to="`/activity-detail/${activity.slug}`"> -->
                                     <div class="tour-card">
                                         <div class="tour-image">
                                             <img :src="activity.thumbnail_url" alt="Tour image" class="img-fluid" />
@@ -434,9 +473,11 @@ async function fetchActivities() {
                                                     v-if="Array.isArray(activity?.activity_date) && activity.activity_date.length > 0">
                                                     <template
                                                         v-if="activity.activity_date[0].discount_price && activity.activity_date[0].discount_price > 0">
-                                                        <del class="text-danger">${{ activity.activity_date[0].price }}</del>
+                                                        <del class="text-danger">${{ activity.activity_date[0].price
+                                                            }}</del>
                                                         <br>
-                                                        <span class="text-white">${{ activity.activity_date[0].discount_price
+                                                        <span class="text-white">${{
+                                                            activity.activity_date[0].discount_price
                                                             }}</span>
                                                     </template>
                                                     <template v-else>
@@ -454,13 +495,26 @@ async function fetchActivities() {
                                             <div class="tour-details">
                                                 <span><i class="bi bi-clock"></i> {{ activity.duration }}</span>
                                             </div>
-                                            <router-link :to="`/activity-detail/${activity.slug}`"
-                                                class="bt-outline-primary">
-                                                View Activity
-                                            </router-link>
+                                            <div class="row">
+                                                <div class="col-md-2"
+                                                    style="background:#008cad; border-radius: 20px; text-align: center;">
+                                                    <router-link :to="`/activity-detail/${activity.slug}`"
+                                                        title="View Activity" class="bt-outline-primary"
+                                                        style="font-size: 20px; color:#fff;">
+                                                        <span class="bi bi-eye"></span>
+                                                    </router-link>
+                                                </div>
+                                                <div class="col-md-8"></div>
+                                                <div class="col-md-2"
+                                                    :style="{ background: activity.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
+                                                    @click="toggleWishlist(activity)">
+                                                    <span class="bi bi-heart"
+                                                        style="font-size: 20px; color:#fff; cursor:pointer;"></span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </router-link>
+                                <!-- </router-link> -->
                             </div>
                         </div>
                     </div>

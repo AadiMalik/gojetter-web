@@ -214,7 +214,7 @@ const postReview = async () => {
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.location">
+                              <div class="col-6 col-md-3 mb-3" v-if="tour?.destination_id">
                                     <div class="info-box">
                                           <i class="bi bi-geo-alt"></i>
                                           <h6>Destination</h6>
@@ -290,10 +290,10 @@ const postReview = async () => {
                                                       {{ formatDate(date.start_date) }} - {{
                                                             formatDate(date.end_date) }} <br />
                                                       <b>${{ (date.discount_price &&
-                                                                  date.discount_price > 0
+                                                            date.discount_price > 0
                                                             ? date.discount_price
                                                             : date.price)
-                                                            }}</b>
+                                                      }}</b>
                                                       {{ date.price_type === 'per_person' ? 'per person' : 'Group'
                                                       }}
 
@@ -527,7 +527,7 @@ const postReview = async () => {
                                                       <!-- Right side (name + time + comment) -->
                                                       <div class="flex items-center gap-2" style="float: left;">
                                                             <strong style="margin-left:7px;">{{ rev.user?.name
-                                                                  }}</strong><br>
+                                                            }}</strong><br>
                                                             <small class="text-muted block" style="margin-left:7px;">{{
                                                                   formatTime(rev.created_at) }}</small>
                                                       </div> <br><br><br>
@@ -574,10 +574,10 @@ const postReview = async () => {
                                                                                     v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
                                                                                     <del class="text-danger">${{
                                                                                           tour.tour_date[0].price
-                                                                                    }}</del> <br>
+                                                                                          }}</del> <br>
                                                                                     <span class="text-white">${{
                                                                                           tour.tour_date[0].discount_price
-                                                                                    }}</span>
+                                                                                          }}</span>
                                                                               </template>
                                                                               <template v-else>
                                                                                     ${{ tour.tour_date[0].price }}
@@ -596,10 +596,18 @@ const postReview = async () => {
                                                                         <span><i class="bi bi-clock"></i> {{
                                                                               tour.duration }}</span>
                                                                   </div>
-                                                                  <router-link :to="`/tour-detail/${tour.slug}`"
-                                                                        class="bt-outline-primary">
-                                                                        View Tour
-                                                                  </router-link>
+                                                                  <div class="row">
+                                                                        <div class="col-md-2"
+                                                                              style="background:#008cad; border-radius: 20px; text-align: center;">
+                                                                              <router-link
+                                                                                    :to="`/tour-detail/${tour.slug}`"
+                                                                                    title="View Tour"
+                                                                                    class="bt-outline-primary"
+                                                                                    style="font-size: 20px; color:#fff;">
+                                                                                    <span class="bi bi-eye"></span>
+                                                                              </router-link>
+                                                                        </div>
+                                                                  </div>
                                                             </div>
                                                       </div>
                                                 </router-link>

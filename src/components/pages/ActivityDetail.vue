@@ -1,4 +1,5 @@
 <script setup>
+import { useAuthStore } from '@/store/auth'
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
@@ -12,20 +13,75 @@ const route = useRoute()
 const router = useRouter()
 
 const loading = ref(true)
-const tour = ref(null)
-const related_tours = ref([])
+const activity = ref(null)
+const related_activity = ref([])
 const selectedDateId = ref(null)
-const adults = ref(1)
+const selectedTimeSlotId = ref(null)
+const quantity = ref(1)
 
-// Active FAQ index
-const activeFaq = ref(null)
-const toggleFaq = (index) => {
-      activeFaq.value = activeFaq.value === index ? null : index
-}
+const token = localStorage.getItem('token')
 
 const selectedDate = computed(() => {
-      return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
+      return activity.value?.activity_date?.find(d => d.id === selectedDateId.value) || null
 })
+
+const availableTimeSlots = computed(() => {
+      return selectedDate.value?.activity_time_slot || []
+})
+
+const addToCart = async () => {
+      if (!token) {
+            toast.error("Please login first.")
+            router.push('/login')
+            return
+      }
+      if (!selectedDate.value) {
+            toast.error("Please select a date.")
+            return
+      }
+      if (!selectedTimeSlotId.value) {
+            toast.error("Please select a time slot.")
+            return
+      }
+      const slot = availableTimeSlots.value.find(s => s.id === selectedTimeSlotId.value)
+      if (!slot || slot.available_seats < quantity.value) {
+            toast.error("Not enough seats available.")
+            return
+      }
+      const auth = useAuthStore()
+      const user = computed(() => auth.user)
+
+      function logout() {
+            auth.logout()
+      }
+      try {
+            const res = await api.post("/save-cart", {
+                  activity_id: activity.value.id,
+                  activity_date_id: selectedDate.value.id,
+                  activity_time_slot_id: selectedTimeSlotId.value,
+                  quantity: quantity.value
+            },
+                  {
+                        headers: {
+                              Authorization: `Bearer ${token}`
+                        }
+                  })
+            if (res.data?.Success) {
+                  toast.success(res.data?.Message)
+            } else {
+                  toast.error(res.data?.Message || "Failed to add to cart")
+            }
+      } catch (err) {
+            if (err.response?.status === 401) {
+                  // logout logic
+                  logout()
+                  toast.error("Your session has expired. Please login again.")
+                  router.push("/login")
+            } else {
+                  toast.error("Error while adding to cart")
+            }
+      }
+}
 
 const formatDate = (dateStr) => {
       const options = { day: '2-digit', month: 'short', year: 'numeric' }
@@ -36,7 +92,7 @@ const formatTime = (dateStr) => {
 }
 
 const isPastCutoff = (date) => {
-      const start = new Date(date.start_date)
+      const start = new Date(date.date)
       const cutoffDate = new Date(start)
       cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
 
@@ -46,62 +102,41 @@ const isPastCutoff = (date) => {
       return today > cutoffDate
 }
 
-const bookNow = () => {
-      if (!selectedDate.value) {
-            toast.error('Please select a date.')
-            return
-      }
-
-      if (isPastCutoff(selectedDate.value)) {
-           toast.error(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
-            return
-      }
-
-      router.push({
-            path: '/checkout-tour',
-            query: {
-                  date_id: selectedDate.value.id,
-                  tour_id: selectedDate.value.tour_id,
-                  adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
-            }
-      })
-}
-
 /* -------------------------
-   ⭐ Fetch Tour + Related Tours
+   ⭐ Fetch Activity + Related Activity
 -------------------------- */
-const fetchTour = async () => {
+const fetchActivity = async () => {
       const slug = route.params.slug
       if (!slug) {
-            router.push('/tours')
+            router.push('/activity')
             return
       }
 
       loading.value = true
       try {
-            const res = await api.get(`/tour-by-slug/${slug}`)
+            const res = await api.get(`/activity-by-slug/${slug}`)
             if (res.data?.Success && res.data?.Data) {
-                  tour.value = res.data.Data.detail
-                  // limit to 3 related tours
-                  related_tours.value = res.data.Data.related_tours.slice(0, 3)
+                  activity.value = res.data.Data.detail
+                  // limit to 3 related activity
+                  related_activity.value = res.data.Data.related_activities.slice(0, 3)
             } else {
-                  router.push('/tours')
+                  router.push('/activity')
             }
       } catch (error) {
             console.error(error)
-            router.push('/tours')
+            router.push('/activity')
       } finally {
             loading.value = false
       }
 }
 
-onMounted(fetchTour)
+onMounted(fetchActivity)
 
 // 👀 Watch for route slug change
 watch(
       () => route.params.slug,
       () => {
-            fetchTour()
+            fetchActivity()
             window.scrollTo({
                   top: 0,
                   behavior: 'smooth' // smooth scrolling
@@ -123,15 +158,15 @@ const postReview = async () => {
             return
       }
       try {
-            const res = await api.post("/save-tour-review", {
-                  tour_id: tour.value?.id,
+            const res = await api.post("/save-activity-review", {
+                  activity_id: activity.value?.id,
                   rating: form.value.rating,
                   comment: form.value.comment
             })
 
             if (res.data?.Success && res.data?.Data) {
                   // Push the new review into the same array
-                  tour.value.tour_reviews.unshift(res.data.Data)
+                  activity.value.activity_reviews.unshift(res.data.Data)
 
                   // Reset form
                   form.value.rating = null
@@ -156,14 +191,14 @@ const postReview = async () => {
       <main class="main">
             <!-- Page Title -->
             <div class="page-title dark-background" data-aos="fade"
-                  :style="{ backgroundImage: `url(${tour?.thumbnail_url})` }">
+                  :style="{ backgroundImage: `url(${activity?.thumbnail_url})` }">
                   <div class="container position-relative">
-                        <h1>{{ tour?.title }}</h1>
-                        <p v-html="tour?.short_description"></p>
+                        <h1>{{ activity?.title }}</h1>
+                        <p v-html="activity?.short_description"></p>
                         <nav class="breadcrumbs">
                               <ol>
                                     <li><router-link to="/">Home</router-link></li>
-                                    <li class="current">Tour Detail</li>
+                                    <li class="current">Activity Detail</li>
                               </ol>
                         </nav>
                   </div>
@@ -175,58 +210,58 @@ const postReview = async () => {
                   <div class="container" data-aos="fade-up" data-aos-delay="600">
                         <!-- Tour Overview -->
                         <div class="tour-info-row row text-center mb-4">
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.duration">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.duration">
                                     <div class="info-box">
                                           <i class="bi bi-clock"></i>
                                           <h6>Duration</h6>
-                                          <p>{{ tour?.duration }}</p>
+                                          <p>{{ activity?.duration }}</p>
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.group_size">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.group_size">
                                     <div class="info-box">
                                           <i class="bi bi-people"></i>
                                           <h6>Group Size</h6>
-                                          <p>{{ tour?.group_size }} people</p>
+                                          <p>{{ activity?.group_size }} people</p>
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.age_limit">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.age_limit">
                                     <div class="info-box">
                                           <i class="bi bi-person-badge"></i>
                                           <h6>Age Limit</h6>
-                                          <p>{{ tour?.age_limit }}+</p>
+                                          <p>{{ activity?.age_limit }}+</p>
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.languages">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.languages">
                                     <div class="info-box">
                                           <i class="bi bi-translate"></i>
                                           <h6>Languages</h6>
-                                          <p>{{ tour?.languages }}</p>
+                                          <p>{{ activity?.languages }}</p>
                                     </div>
                               </div>
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.tour_type">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.activity_type">
                                     <div class="info-box">
                                           <i class="bi bi-people"></i>
-                                          <h6>Tour Type</h6>
-                                          <p>{{ tour?.tour_type }}</p>
+                                          <h6>Activity Type</h6>
+                                          <p>{{ activity?.activity_type }}</p>
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.location">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.destination_id">
                                     <div class="info-box">
                                           <i class="bi bi-geo-alt"></i>
                                           <h6>Destination</h6>
-                                          <p>{{ tour?.destination?.name }}</p>
+                                          <p>{{ activity?.destination?.name }}</p>
                                     </div>
                               </div>
 
-                              <div class="col-6 col-md-3 mb-3" v-if="tour?.difficulty_level">
+                              <div class="col-6 col-md-3 mb-3" v-if="activity?.difficulty_level">
                                     <div class="info-box">
                                           <i class="bi bi-graph-up"></i>
                                           <h6>Difficulty</h6>
-                                          <p>{{ tour?.difficulty_level }}</p>
+                                          <p>{{ activity?.difficulty_level }}</p>
                                     </div>
                               </div>
                               <!-- 
@@ -243,8 +278,8 @@ const postReview = async () => {
                                     <div class="col-lg-8">
                                           <div class="row mt-2 mb-3">
                                                 <div class="col-md-12">
-                                                      <div class="tour-tags" v-if="tour?.tags">
-                                                            <span v-for="(tag, index) in tour.tags.split(',')"
+                                                      <div class="tour-tags" v-if="activity?.tags">
+                                                            <span v-for="(tag, index) in activity.tags.split(',')"
                                                                   :key="index" class="badge bg-primary me-2">
                                                                   {{ tag.trim() }}
                                                             </span>
@@ -254,28 +289,29 @@ const postReview = async () => {
                                           <div class="row mt-2 mb-3">
                                                 <div class="stars">
                                                       <span v-for="n in 5" :key="n">
-                                                            <i v-if="n <= Math.round(tour?.average_rating)"
+                                                            <i v-if="n <= Math.round(activity?.average_rating)"
                                                                   class="bi bi-star-fill text-warning"></i>
                                                             <i v-else class="bi bi-star text-muted"></i>
                                                       </span>
                                                       <b style="margin-left: 5px;">{{
-                                                            Number(tour?.average_rating).toFixed(2) }}</b>
-                                                      <span> ( {{ tour?.tour_reviews.length }} Reviews )</span>
+                                                            Number(activity?.average_rating).toFixed(2) }}</b>
+                                                      <span> ( {{ activity?.activity_reviews.length }} Reviews )</span>
                                                 </div>
                                           </div>
                                           <h4>Overview</h4>
                                           <hr>
-                                          <p v-html="tour?.overview"></p>
+                                          <p v-html="activity?.overview"></p>
                                           <br> <br>
                                           <h4>Short Description</h4>
                                           <hr>
-                                          <p v-html="tour?.short_description"></p>
+                                          <p v-html="activity?.short_description"></p>
                                     </div>
                                     <div class="col-lg-4">
                                           <div class="tour-highlights">
                                                 <h3>Available Dates</h3>
 
-                                                <label v-for="date in tour?.tour_date" :key="date.id"
+                                                <!-- Dates -->
+                                                <label v-for="date in activity?.activity_date" :key="date.id"
                                                       class="p-2 mb-2 rounded w-100 d-block" :class="[
                                                             isPastCutoff(date)
                                                                   ? 'border border-danger bg-light text-muted'
@@ -287,162 +323,106 @@ const postReview = async () => {
                                                       <input type="radio" name="tour_date" :value="date.id"
                                                             v-model="selectedDateId" :disabled="isPastCutoff(date)"
                                                             class="d-none" />
-                                                      {{ formatDate(date.start_date) }} - {{
-                                                            formatDate(date.end_date) }} <br />
+                                                      {{ formatDate(date.date) }}
                                                       <b>${{ (date.discount_price &&
-                                                                  date.discount_price > 0
+                                                            date.discount_price > 0
                                                             ? date.discount_price
                                                             : date.price)
                                                             }}</b>
-                                                      {{ date.price_type === 'per_person' ? 'per person' : 'Group'
-                                                      }}
 
                                                       <span v-if="isPastCutoff(date)" class="text-danger ms-2">(Booking
                                                             closed)</span>
                                                 </label>
+                                                <!-- <label v-for="date in activity?.activity_date" :key="date.id"
+                                                      class="p-2 mb-2 rounded w-100 d-block"
+                                                      :class="[selectedDateId === date.id ? 'border border-primary bg-primary text-white' : 'border border-success']"
+                                                      style="cursor:pointer">
+                                                      <input type="radio" name="tour_date" :value="date.id"
+                                                            v-model="selectedDateId" class="d-none" />
+                                                      {{ date.date }}
+                                                      <span v-if="date.discount_price > 0" class="ms-2 text-success">
+                                                            {{ date.discount_price }} (Discounted)
+                                                      </span>
+                                                      <span v-else class="ms-2 text-muted">
+                                                            {{ date.price }}
+                                                      </span>
+                                                </label> -->
 
-                                                <!-- Adults input if per_person -->
-                                                <div v-if="selectedDate && selectedDate.price_type === 'per_person'"
-                                                      class="mt-3">
-                                                      <label>Number of Adults:</label>
-                                                      <input type="number" min="1" v-model.number="adults"
+                                                <!-- Time Slots (only show if date is picked) -->
+                                                <div v-if="selectedDate">
+                                                      <h5 class="mt-3">Time Slots</h5>
+                                                      <label v-for="slot in availableTimeSlots" :key="slot.id"
+                                                            class="p-2 mb-2 rounded w-100 d-block" :class="[
+                                                                  slot.available_seats >= quantity
+                                                                        ? (selectedTimeSlotId === slot.id ? 'border border-primary bg-primary text-white' : 'border border-success')
+                                                                        : 'border border-danger bg-light text-muted'
+                                                            ]"
+                                                            :style="{ cursor: slot.available_seats >= quantity ? 'pointer' : 'not-allowed' }">
+                                                            <input type="radio" name="time_slot" :value="slot.id"
+                                                                  v-model="selectedTimeSlotId"
+                                                                  :disabled="slot.available_seats < quantity"
+                                                                  class="d-none" />
+                                                            {{ slot.start_time }} - {{ slot.end_time }}
+                                                            <span class="ms-2">({{ slot.available_seats }} seats
+                                                                  left)</span>
+                                                      </label>
+                                                </div>
+
+                                                <!-- Quantity -->
+                                                <div class="mt-3">
+                                                      <label>Quantity:</label>
+                                                      <input type="number" min="1" v-model="quantity"
                                                             class="form-control" />
                                                 </div>
 
-                                                <button @click="bookNow" class="form-control text-white mt-3"
-                                                      style="background-color: #008cad;">
-                                                      Book Now
+                                                <!-- Add to Cart -->
+                                                <button @click="addToCart" class="form-control text-white mt-3"
+                                                      style="background-color:#008cad;">
+                                                      Add to Cart
                                                 </button>
                                           </div>
-
-                                    </div>
-
-                              </div>
-                        </div>
-
-                        <!-- Itinerary -->
-                        <div class="tour-itinerary" data-aos="fade-up" data-aos-delay="600">
-                              <div class="row">
-                                    <div class="col-md-8" v-if="tour?.tour_itinerary.length">
-                                          <h3>Itinerary</h3>
-                                          <hr>
-                                          <div class="itinerary-timeline">
-                                                <div class="itinerary-item" v-for="item in tour?.tour_itinerary"
-                                                      :key="item.id">
-                                                      <div class="day-number">Day {{ item.day_number }}</div>
-                                                      <div class="day-content">
-                                                            <h4>{{ item.title }}</h4>
-                                                            <p v-html="item.description"></p>
-
-                                                            <!-- Optional image if available -->
-                                                            <div v-if="item.image_url" class="day-image">
-                                                                  <img :src="item.image_url" :alt="item.title"
-                                                                        style="width:100%; height:100%">
-                                                            </div>
-
-                                                      </div>
-                                                </div>
-                                          </div>
-                                    </div>
-                                    <div class="col-lg-4" v-if="tour?.highlights">
-                                          <div class="card">
-                                                <div class="card-body">
-                                                      <h4>Highlights</h4>
-                                                      <hr>
-                                                      <p v-html="tour?.highlights"></p>
-                                                      <!-- <ul>
-                                                      <li><i class="bi bi-check-circle"></i> 4-Star Boutique Hotels</li>
-                                                      <li><i class="bi bi-check-circle"></i> Expert Local Guides</li>
-                                                      <li><i class="bi bi-check-circle"></i> Daily Breakfast Included
-                                                      </li>
-                                                      <li><i class="bi bi-check-circle"></i> Small Group (Max 16)
-                                                      </li>
-                                                      <li><i class="bi bi-check-circle"></i> UNESCO World Heritage Sites
-                                                      </li>
-                                                      <li><i class="bi bi-check-circle"></i> Cultural Experiences</li>
-                                                </ul> -->
-                                                </div>
-                                          </div>
-                                          <br>
-                                          <div class="card" v-if="tour?.tour_faq?.length">
-                                                <div class="card-body">
-                                                      <h4>Frequently Asked Questions</h4>
-                                                      <hr>
-
-                                                      <div v-for="(faq, index) in tour?.tour_faq" :key="index"
-                                                            class="faq-item mb-2">
-                                                            <div class="faq-question" @click="toggleFaq(index)">
-                                                                  <span>{{ faq.question }}</span>
-                                                                  <span
-                                                                        :class="['arrow', { 'open': activeFaq === index }]">&#9662;</span>
-                                                            </div>
-                                                            <div v-if="activeFaq === index" class="faq-answer">
-                                                                  {{ faq.answer }}
-                                                            </div>
-                                                      </div>
-                                                </div>
-                                          </div>
                                     </div>
                               </div>
                         </div>
-
                         <!-- Inclusions -->
                         <div class="tour-inclusions" data-aos="fade-up" data-aos-delay="600">
                               <div class="row">
                                     <div class="col-md-8">
                                           <div class="row">
-                                                <div class="col-lg-6" v-if="tour?.tour_inclusion?.length">
+                                                <div class="col-lg-6" v-if="activity?.activity_inclusion?.length">
                                                       <div class="included-section">
                                                             <h3><i class="bi bi-check-circle-fill"></i> What's Included
                                                             </h3>
                                                             <ul class="inclusion-list included"
-                                                                  v-for="item in tour?.tour_inclusion" :key="item.id">
+                                                                  v-for="item in activity?.activity_inclusion"
+                                                                  :key="item.id">
                                                                   <li><i class="bi bi-check"></i> {{ item.item }}</li>
                                                             </ul>
                                                       </div>
                                                 </div>
-                                                <div class="col-lg-6" v-if="tour?.tour_exclusion?.length">
+                                                <div class="col-lg-6" v-if="activity?.activity_exclusion?.length">
                                                       <div class="excluded-section">
                                                             <h3><i class="bi bi-x-circle-fill"></i> What's Not Included
                                                             </h3>
                                                             <ul class="inclusion-list excluded"
-                                                                  v-for="item in tour?.tour_exclusion" :key="item.id">
+                                                                  v-for="item in activity?.activity_exclusion"
+                                                                  :key="item.id">
                                                                   <li><i class="bi bi-x"></i> {{ item.item }}</li>
                                                             </ul>
                                                       </div>
                                                 </div>
                                           </div>
                                     </div>
-                                    <div class="col-md-4" v-if="tour?.tour_download.length">
+                                    <div class="col-md-4" v-if="activity?.activity_not_suitable.length">
                                           <div class="card">
                                                 <div class="card-body">
-                                                      <h4>Downloads</h4>
+                                                      <h4>Not Suitable</h4>
                                                       <hr>
-                                                      <table class="table table-borderd" width="100%">
-                                                            <thead>
-                                                                  <tr>
-                                                                        <th>
-                                                                              File Type
-                                                                        </th>
-                                                                        <th>
-                                                                              File
-                                                                        </th>
-                                                                  </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                  <tr v-for="item in tour?.tour_download">
-                                                                        <td>
-                                                                              {{ item?.file_type }}
-                                                                        </td>
-                                                                        <td>
-                                                                              <a :href="item?.file_path_url" download
-                                                                                    class="btn btn-primary btn-sm">
-                                                                                    Download
-                                                                              </a>
-                                                                        </td>
-                                                                  </tr>
-                                                            </tbody>
-                                                      </table>
+                                                      <ul>
+                                                            <li v-for="item in activity?.activity_not_suitable">
+                                                                  {{ item.item }}
+                                                            </li>
+                                                      </ul>
                                                 </div>
                                           </div>
                                     </div>
@@ -450,19 +430,49 @@ const postReview = async () => {
 
                         </div>
                         <!-- Booking Form -->
-                        <div v-if="tour?.description" class="booking-section" id="booking" data-aos="fade-up"
-                              data-aos-delay="600">
-                              <h4>Description</h4>
-                              {{ tour?.description }}
+                        <div class="booking-section" id="booking" data-aos="fade-up" data-aos-delay="600">
+                              <div class="row">
+                                    <div class="col-md-8">
+                                          <h4>Description</h4>
+                                          {{ activity?.full_description }}
+                                    </div>
+                                    <div class="col-md-4" v-if="activity?.activity_policy.length">
+                                          <div class="card">
+                                                <div class="card-body">
+                                                      <h4>Policy</h4>
+                                                      <hr>
+                                                      <div class="row">
+                                                            <div class="col-md-12"
+                                                                  v-for="item in activity?.activity_policy">
+                                                                  <b>{{ item?.title }}</b>
+                                                                  <p>{{ item?.description }}</p>
+                                                            </div>
+                                                      </div>
+                                                </div>
+                                          </div>
+                                    </div>
+                              </div>
                         </div>
 
+                        <!-- Supports -->
+                        <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600"
+                              v-if="activity?.activity_support.length">
+                              <h3>Supports</h3>
+                              <hr>
+                              <div class="row">
+                                    <div class="col-md-12" v-for="item in activity?.activity_support">
+                                          <b>{{ item.contact_type }}</b>
+                                          <p>{{ item.contact_info }}</p>
+                                    </div>
+                              </div>
+                        </div>
                         <!-- Gallery -->
                         <div class="tour-gallery" data-aos="fade-up" data-aos-delay="600"
-                              v-if="tour?.tour_image.length">
+                              v-if="activity?.activity_image.length">
                               <h3>Gallery</h3>
                               <hr>
                               <div class="gallery-grid">
-                                    <div class="gallery-item" v-for="item in tour?.tour_image" :key="item.id">
+                                    <div class="gallery-item" v-for="item in activity?.activity_image" :key="item.id">
                                           <a :href="item.image_url" class="glightbox">
                                                 <img :src="item.image_url" :alt="item.title" class="img-fluid"
                                                       loading="lazy">
@@ -512,12 +522,12 @@ const postReview = async () => {
                                     </div>
                               </div>
                               <div class="col-md-12 mt-2">
-                                    <h5>({{ tour?.tour_reviews.length }}) Reviews</h5>
+                                    <h5>({{ activity?.activity_reviews.length }}) Reviews</h5>
                                     <hr>
                                     <div style="max-height: 400px; overflow: auto;">
-                                          <div v-if="tour?.tour_reviews.length === 0">No reviews yet.</div>
+                                          <div v-if="activity?.activity_reviews.length === 0">No reviews yet.</div>
 
-                                          <div v-for="rev in tour?.tour_reviews" :key="rev.id"
+                                          <div v-for="rev in activity?.activity_reviews" :key="rev.id"
                                                 class="border p-2 mb-2 rounded">
                                                 <div class="flex items-start gap-2 mb-3">
                                                       <!-- User Picture -->
@@ -527,7 +537,7 @@ const postReview = async () => {
                                                       <!-- Right side (name + time + comment) -->
                                                       <div class="flex items-center gap-2" style="float: left;">
                                                             <strong style="margin-left:7px;">{{ rev.user?.name
-                                                                  }}</strong><br>
+                                                            }}</strong><br>
                                                             <small class="text-muted block" style="margin-left:7px;">{{
                                                                   formatTime(rev.created_at) }}</small>
                                                       </div> <br><br><br>
@@ -554,33 +564,35 @@ const postReview = async () => {
                   <div class="container" data-aos="fade-up" data-aos-delay="600">
                         <div class="row">
                               <div class="col-12">
-                                    <h4 class="section-subtitle mt-4">Related Tours</h4>
+                                    <h4 class="section-subtitle mt-4">Related Activities</h4>
                                     <hr>
-                                    <div v-if="loading" class="text-center">Loading related tours...</div>
-                                    <div v-else-if="!related_tours.length" class="text-center">No related tours found.
+                                    <div v-if="loading" class="text-center">Loading related activities...</div>
+                                    <div v-else-if="!related_activity.length" class="text-center">No related activities
+                                          found.
                                     </div>
                                     <div class="row">
-                                          <div class="col-lg-4 col-md-6 mb-4" v-for="tour in related_tours"
-                                                :key="tour.id">
-                                                <router-link :to="`/tour-detail/${tour.slug}`">
+                                          <div class="col-lg-4 col-md-6 mb-4" v-for="activity in related_activity"
+                                                :key="activity.id">
+                                                <router-link :to="`/activity-detail/${activity.slug}`">
                                                       <div class="tour-card">
                                                             <div class="tour-image">
-                                                                  <img :src="tour.thumbnail_url" alt="Tour image"
-                                                                        class="img-fluid" />
+                                                                  <img :src="activity.thumbnail_url"
+                                                                        alt="Activity image" class="img-fluid" />
                                                                   <div class="tour-price">
                                                                         <template
-                                                                              v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
+                                                                              v-if="Array.isArray(activity?.activity_date) && activity.activity_date.length > 0">
                                                                               <template
-                                                                                    v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
+                                                                                    v-if="activity.activity_date[0].discount_price && activity.activity_date[0].discount_price > 0">
                                                                                     <del class="text-danger">${{
-                                                                                          tour.tour_date[0].price
-                                                                                    }}</del> <br>
+                                                                                          activity.activity_date[0].price
+                                                                                          }}</del> <br>
                                                                                     <span class="text-white">${{
-                                                                                          tour.tour_date[0].discount_price
-                                                                                    }}</span>
+                                                                                          activity.activity_date[0].discount_price
+                                                                                          }}</span>
                                                                               </template>
                                                                               <template v-else>
-                                                                                    ${{ tour.tour_date[0].price }}
+                                                                                    ${{ activity.activity_date[0].price
+                                                                                    }}
                                                                               </template>
                                                                         </template>
                                                                         <template v-else>
@@ -589,17 +601,26 @@ const postReview = async () => {
                                                                   </div>
                                                             </div>
                                                             <div class="tour-content">
-                                                                  <h4 class="one-line">{{ tour.title }}</h4>
-                                                                  <p v-html="tour.short_description" class="one-line">
+                                                                  <h4 class="one-line">{{ activity.title }}</h4>
+                                                                  <p v-html="activity.short_description"
+                                                                        class="one-line">
                                                                   </p>
                                                                   <div class="tour-details">
                                                                         <span><i class="bi bi-clock"></i> {{
-                                                                              tour.duration }}</span>
+                                                                              activity.duration }}</span>
                                                                   </div>
-                                                                  <router-link :to="`/tour-detail/${tour.slug}`"
-                                                                        class="bt-outline-primary">
-                                                                        View Tour
-                                                                  </router-link>
+                                                                  <div class="row">
+                                                                        <div class="col-md-2"
+                                                                              style="background:#008cad; border-radius: 20px; text-align: center;">
+                                                                              <router-link
+                                                                                    :to="`/activity-detail/${activity.slug}`"
+                                                                                    title="View Activity"
+                                                                                    class="bt-outline-primary"
+                                                                                    style="font-size: 20px; color:#fff;">
+                                                                                    <span class="bi bi-eye"></span>
+                                                                              </router-link>
+                                                                        </div>
+                                                                  </div>
                                                             </div>
                                                       </div>
                                                 </router-link>

@@ -1,6 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '@/api';
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 
 const data = ref([]);
 const categories = ref([]);
@@ -12,15 +15,25 @@ const selectedDuration = ref('');
 const selectedPrice = ref('');
 
 const loading = ref(true);
+const router = useRouter();
 
 onMounted(async () => {
     await fetchData();
 });
 
+function isLoggedIn() {
+    return !!localStorage.getItem("token");
+}
+
 async function fetchData() {
     try {
+        const headers = {};
+        if (isLoggedIn()) {
+            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
+        }
+
         const [toursRes, categoriesRes] = await Promise.all([
-            api.get('/tour-list'),
+            api.get('/tour-list', { headers }),
             api.get('/tour-category-list')
         ]);
 
@@ -45,13 +58,18 @@ async function fetchTours() {
     try {
         loading.value = true;
 
+        const headers = {};
+        if (isLoggedIn()) {
+            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
+        }
+
         const params = {};
         if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
 
-        const res = await api.get('/tour-list', { params });
+        const res = await api.get('/tour-list', { params, headers });
 
         if (res.data?.Success) {
             data.value = res.data.Data.data || [];
@@ -63,7 +81,37 @@ async function fetchTours() {
         loading.value = false;
     }
 }
+
+// 👉 Add to wishlist
+async function toggleWishlist(tour) {
+    if (!isLoggedIn()) {
+        router.push('/login');
+        return;
+    }
+
+    if (tour.is_wishlist === 1) {
+        toast.error("This tour is already in wishlist");
+        return;
+    }
+
+    try {
+        const res = await api.post(
+            '/save-wishlist',
+            { tour_id: tour.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        if (res.data?.Success) {
+            tour.is_wishlist = 1; // mark as added
+            toast.success(res.data?.Message);
+        }
+    } catch (err) {
+        console.error("Wishlist error:", err);
+    }
+}
+
 </script>
+
 
 <template>
     <main class="main">
@@ -139,277 +187,6 @@ async function fetchTours() {
                         </div>
                     </div>
                 </div>
-
-                <!-- Featured Tours Slider -->
-                <!-- <div class="row mb-5" data-aos="fade-up" data-aos-delay="300">
-                    <div class="col-12">
-                        <h3 class="section-subtitle mb-4">Featured Tours</h3>
-                        <div class="featured-tours-slider swiper init-swiper">
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-15.webp" alt="Bali Adventure"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Best Seller</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Bali Adventure Escape</h4>
-                                            <p>Discover the mystical beauty of Bali with temple visits, volcano hiking,
-                                                and pristine beaches.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 7 Days</span>
-                                                <span class="price">From $899</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-22.webp" alt="Paris Romance"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Luxury</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Romantic Paris Getaway</h4>
-                                            <p>Experience the city of love with premium accommodations and exclusive
-                                                dining.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 5 Days</span>
-                                                <span class="price">From $1299</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-8.webp" alt="Tokyo Culture"
-                                                class="img-fluid">
-                                            <div class="tour-badge">New</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Tokyo Cultural Experience</h4>
-                                            <p>Immerse yourself in Japanese culture, from traditional tea ceremonies to
-                                                modern city life.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 10 Days</span>
-                                                <span class="price">From $1599</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-14.webp" alt="Norwegian Fjords"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Popular</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Norwegian Fjords Cruise</h4>
-                                            <p>Sail through dramatic fjords and witness the stunning landscapes of
-                                                Norway's coastline.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 9 Days</span>
-                                                <span class="price">From $1899</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-7.webp" alt="Egyptian Adventure"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Cultural</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Ancient Egypt Explorer</h4>
-                                            <p>Journey through time visiting pyramids, temples, and sailing the
-                                                legendary Nile River.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 8 Days</span>
-                                                <span class="price">From $1149</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-19.webp" alt="Costa Rica Adventure"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Adventure</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Costa Rica Eco Adventure</h4>
-                                            <p>Experience rainforest canopy tours, wildlife viewing, and pristine
-                                                beaches in this eco paradise.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 6 Days</span>
-                                                <span class="price">From $749</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-2.webp" alt="Greek Islands"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Summer Special</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Greek Islands Hopping</h4>
-                                            <p>Explore the stunning Greek islands, from Santorini's sunsets to Mykonos'
-                                                vibrant nightlife.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 11 Days</span>
-                                                <span class="price">From $1399</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="featured-tour-card">
-                                        <div class="tour-image">
-                                            <img src="/assets/img/travel/tour-25.webp" alt="Patagonia Trek"
-                                                class="img-fluid">
-                                            <div class="tour-badge">Extreme</div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4>Patagonia Wilderness Trek</h4>
-                                            <p>Challenge yourself in one of the world's last great wildernesses with
-                                                glaciers and mountain peaks.</p>
-                                            <div class="tour-meta">
-                                                <span class="duration"><i class="bi bi-clock"></i> 12 Days</span>
-                                                <span class="price">From $2299</span>
-                                            </div>
-                                            <router-link to="/tour-details" class="btn btn-primary">View
-                                                Details</router-link>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="swiper-pagination"></div>
-                        </div>
-                    </div>
-                </div> -->
-
-                <!-- Tour Categories -->
-                <!-- <div class="row mb-5" data-aos="fade-up" data-aos-delay="400">
-                    <div class="col-12">
-                        <h3 class="section-subtitle mb-4">Browse by Category</h3>
-                        <div class="row">
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-compass"></i>
-                                    </div>
-                                    <h5>Adventure</h5>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-gem"></i>
-                                    </div>
-                                    <h5>Luxury</h5>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-people"></i>
-                                    </div>
-                                    <h5>Family</h5>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-palette"></i>
-                                    </div>
-                                    <h5>Cultural</h5>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-sun"></i>
-                                    </div>
-                                    <h5>Beach</h5>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 mb-3">
-                                <div class="category-card">
-                                    <div class="category-icon">
-                                        <i class="bi bi-building"></i>
-                                    </div>
-                                    <h5>City</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
-                <!-- Special Offers -->
-                <!-- <div class="row mb-5" data-aos="fade-up" data-aos-delay="500">
-                    <div class="col-12">
-                        <div class="special-offers">
-                            <h3 class="section-subtitle mb-4">Last-Minute Deals</h3>
-                            <div class="row">
-                                <div class="col-lg-6 mb-4">
-                                    <div class="offer-banner">
-                                        <div class="offer-content">
-                                            <div class="discount-badge">30% OFF</div>
-                                            <h4>Mediterranean Cruise</h4>
-                                            <p>Explore Italy, Greece, and Spain with luxury accommodations and gourmet
-                                                dining.</p>
-                                            <span class="urgency">Only 3 seats left!</span>
-                                            <router-link to="/booking" classss="btn btn-accent">Book Now</router-link>
-                                        </div>
-                                        <div class="offer-image">
-                                            <img src="/assets/img/travel/misc-12.webp" alt="Cruise" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="offer-banner">
-                                        <div class="offer-content">
-                                            <div class="discount-badge">25% OFF</div>
-                                            <h4>African Safari</h4>
-                                            <p>Witness the great migration and encounter magnificent wildlife in their
-                                                natural habitat.</p>
-                                            <span class="urgency">Limited time offer!</span>
-                                            <router-link to="/booking" class="btn btn-accent">Book Now</router-link>
-                                        </div>
-                                        <div class="offer-image">
-                                            <img src="/assets/img/travel/misc-8.webp" alt="Safari" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
                 <!-- Tour Grid -->
                 <div class="row" data-aos="fade-up" data-aos-delay="600">
                     <div class="col-12">
@@ -424,40 +201,54 @@ async function fetchTours() {
                                 <div v-if="!des.tours.length" class="text-center">No tours found.</div>
                             </div>
                             <div class="col-lg-4 col-md-6 mb-4" v-for="tour in des.tours" :key="tour.id">
-                                <router-link :to="`/tour-detail/${tour.slug}`">
-                                    <div class="tour-card">
-                                        <div class="tour-image">
-                                            <img :src="tour.thumbnail_url" :alt="tour.title" class="img-fluid" />
-                                            <div class="tour-price">
+                                <!-- <router-link :to="`/tour-detail/${tour.slug}`"> -->
+                                <div class="tour-card">
+                                    <div class="tour-image">
+                                        <img :src="tour.thumbnail_url" :alt="tour.title" class="img-fluid" />
+                                        <div class="tour-price">
+                                            <template
+                                                v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
                                                 <template
-                                                    v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
-                                                    <template
-                                                        v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
-                                                        <del class="text-danger">${{ tour.tour_date[0].price }}</del> <br>
-                                                        <span class="text-white">${{ tour.tour_date[0].discount_price
-                                                            }}</span>
-                                                    </template>
-                                                    <template v-else>
-                                                        ${{ tour.tour_date[0].price }}
-                                                    </template>
+                                                    v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
+                                                    <del class="text-danger">${{ tour.tour_date[0].price }}</del>
+                                                    <br>
+                                                    <span class="text-white">${{ tour.tour_date[0].discount_price
+                                                        }}</span>
                                                 </template>
                                                 <template v-else>
-                                                    $0
+                                                    ${{ tour.tour_date[0].price }}
                                                 </template>
-                                            </div>
-                                        </div>
-                                        <div class="tour-content">
-                                            <h4 class="one-line">{{ tour.title }}</h4>
-                                            <p v-html="tour.short_description" class="one-line"></p>
-                                            <div class="tour-details">
-                                                <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
-                                            </div>
-                                            <router-link :to="`/tour-detail/${tour.slug}`" class="bt-outline-primary">
-                                                View Tour
-                                            </router-link>
+                                            </template>
+                                            <template v-else>
+                                                $0
+                                            </template>
                                         </div>
                                     </div>
-                                </router-link>
+                                    <div class="tour-content">
+                                        <h4 class="one-line">{{ tour.title }}</h4>
+                                        <p v-html="tour.short_description" class="one-line"></p>
+                                        <div class="tour-details">
+                                            <span><i class="bi bi-clock"></i> {{ tour.duration }}</span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-2"
+                                                style="background:#008cad; border-radius: 20px; text-align: center;">
+                                                <router-link :to="`/tour-detail/${tour.slug}`" title="View Tour"
+                                                    class="bt-outline-primary" style="font-size: 20px; color:#fff;">
+                                                    <span class="bi bi-eye"></span>
+                                                </router-link>
+                                            </div>
+                                            <div class="col-md-8"></div>
+                                            <div class="col-md-2"
+                                                :style="{ background: tour.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
+                                                @click="toggleWishlist(tour)">
+                                                <span class="bi bi-heart"
+                                                    style="font-size: 20px; color:#fff; cursor:pointer;"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- </router-link> -->
                             </div>
                         </div>
                     </div>
@@ -465,7 +256,7 @@ async function fetchTours() {
 
 
                 <!-- CTA Section -->
-                <div class="row" data-aos="fade-up" data-aos-delay="700">
+                <!-- <div class="row" data-aos="fade-up" data-aos-delay="700">
                     <div class="col-12">
                         <div class="cta-section text-center">
                             <h3>Not Sure What to Choose?</h3>
@@ -477,7 +268,7 @@ async function fetchTours() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
             </div>
 

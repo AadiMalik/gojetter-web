@@ -13,28 +13,28 @@
                 <ul>
                     <li><router-link to="/" class="nav-link" active-class="active"
                             style="cursor: pointer;">Home</router-link></li>
-                    <li><router-link to="/about" style="cursor: pointer;" active-class="active">About</router-link></li>
-                    <li><router-link to="/destinations" active-class="active">Destinations</router-link></li>
                     <li><router-link to="/tours" active-class="active">Tours</router-link></li>
                     <li><router-link to="/activity" active-class="active">Activities</router-link></li>
-                    <li><router-link to="/gallary" active-class="active">Gallery</router-link></li>
-                    <li><router-link to="/blogs" active-class="active">Blog</router-link></li>
-                    <!-- <li class="dropdown"><a href="#"><span>More Pages</span> <i
+                    <li><router-link to="/destinations" active-class="active">Destinations</router-link></li>
+                    <li><router-link to="/blogs" active-class="active">Blogs</router-link></li>
+                    <li><router-link to="/about" style="cursor: pointer;" active-class="active">About</router-link></li>
+                    <li><router-link to="/contact" active-class="active">Contact</router-link></li>
+                    <li class="dropdown"><a href="#"><span>Pages</span> <i
                                 class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
+                            <li><router-link to="/gallary">Gallery</router-link></li>
                             <li><router-link to="/testimonials">Testimonials</router-link></li>
                             <li><router-link to="/faqs">Frequently Asked Questions</router-link></li>
                             <li><router-link to="/terms">Terms</router-link></li>
                             <li><router-link to="/privacy">Privacy</router-link></li>
                         </ul>
-                    </li> -->
-
-                    <li><router-link to="/contact" active-class="active">Contact</router-link></li>
+                    </li>
                     <!-- Dynamic Auth Links -->
                     <li v-if="!user"><router-link to="/login" active-class="active">Login</router-link></li>
                     <li v-else class="dropdown">
                         <a href="#" style="cursor: pointer;">
-                            <i class="fa fa-person"></i> {{ user.name }} <i class="bi bi-chevron-down toggle-dropdown"></i>
+                            <i class="fa fa-person"></i> {{ user.name }} <i
+                                class="bi bi-chevron-down toggle-dropdown"></i>
                         </a>
                         <ul>
                             <li><router-link to="/account/booking">My Account</router-link></li>
