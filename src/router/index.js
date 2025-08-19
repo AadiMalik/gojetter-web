@@ -27,6 +27,7 @@ import UpdateProfile from '@/components/accounts/UpdateProfile.vue'
 import ChangePassword from '@/components/accounts/ChangePassword.vue'
 
 import TourDetail from '@/components/pages/TourDetail.vue'
+import ActivityDetail from '@/components/pages/ActivityDetail.vue'
 
 const routes = [
   { path: '/', component: Home },
@@ -49,6 +50,7 @@ const routes = [
 
   
   { path: '/tour-detail/:slug', name:'tour-detail', component: TourDetail },
+  { path: '/activity-detail/:slug', name:'activity-detail', component: ActivityDetail },
 
 
   {
