@@ -1,9 +1,100 @@
+<script setup>
+import { onMounted, ref } from 'vue';
+import api from '@/api';
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+
+const blogs = ref([]);
+const categories = ref([]);
+
+const selectedCategory = ref('');
+
+const loading = ref(true);
+
+onMounted(async () => {
+    await fetchCategories(); // always load categories first
+
+    // check if category_id exists in query params
+    const catId = route.query.category_id ? parseInt(route.query.category_id) : null;
+    if (catId) {
+        selectedCategory.value = catId;
+        await fetchBlogs(catId);
+    } else {
+        await fetchData();
+    }
+});
+// ✅ Fetch categories only once
+async function fetchCategories() {
+    try {
+        const res = await api.get('/blog-category-list');
+        if (res.data?.Success) {
+            categories.value = res.data.Data || [];
+        }
+    } catch (err) {
+        console.error('Categories fetch error:', err);
+    }
+}
+async function fetchData() {
+    try {
+        const [blogRes, categoriesRes] = await Promise.all([
+            api.get('/blog-list'),
+            api.get('/blog-category-list')
+        ]);
+
+        if (blogRes.data?.Success) {
+            blogs.value = blogRes.data.Data || [];
+        }
+
+        if (categoriesRes.data?.Success) {
+            categories.value = categoriesRes.data.Data || [];
+        }
+
+    } catch (err) {
+        console.error('Fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
+
+// Fetch blogs with filters
+async function fetchBlogs(cat) {
+    try {
+        loading.value = true;
+
+        selectedCategory.value = cat;
+
+        const params = {};
+        if (cat) {
+            params.category_id = cat;
+        }
+
+        const res = await api.get('/blog-list', { params });
+
+        if (res.data?.Success) {
+            blogs.value = res.data.Data || [];
+        }
+    } catch (err) {
+        console.error('Filter fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
+const formatDate = (dateStr) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    })
+}
+</script>
 <template>
     <main class="main">
 
         <!-- Page Title -->
         <div class="page-title dark-background" data-aos="fade"
-            style="background-image: url(assets/img/travel/showcase-8.webp);">
+            style="background-image: url(/assets/img/travel/showcase-8.webp);">
             <div class="container position-relative">
                 <h1>Blog</h1>
                 <p>Esse dolorum voluptatum ullam est sint nemo et est ipsa porro placeat quibusdam quia assumenda
@@ -17,314 +108,90 @@
             </div>
         </div><!-- End Page Title -->
 
-        <!-- Blog Hero Section -->
-        <section id="blog-hero" class="blog-hero section">
 
-            <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row">
+            <div class="col-md-3" style="padding: 60px 0;">
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action bg-primary text-white"
+                        @click="fetchBlogs(null)">
+                        <b>Categories</b>
+                    </button>
+                    <button v-for="cat in categories" :key="cat.id" class="list-group-item list-group-item-action"
+                        :class="{ active: selectedCategory === cat.id }" @click="fetchBlogs(cat.id)">
+                        {{ cat.name }}
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <!-- Blog Posts Section -->
+                <section id="blog-posts" class="blog-posts section">
 
-                <div class="blog-grid">
+                    <div class="container" data-aos="fade-up" data-aos-delay="100">
+                        <div class="row gy-4">
+                            <div v-if="loading" class="text-center">Loading blogs...</div>
+                            <div v-else-if="!blogs.length" class="text-center">No blogs found.</div>
+                            <div class="col-lg-4" v-for="blog in blogs">
+                                <article>
 
-                    <!-- Main Featured Post -->
-                    <article class="blog-item main-feature" data-aos="fade-up">
-                        <img src="/assets/img/blog/blog-post-9.webp" alt="Blog Image" class="img-fluid">
-                        <div class="blog-content">
-                            <div class="post-meta">
-                                <span class="date">Apr. 14th, 2022</span>
-                                <span class="category">Technology</span>
-                            </div>
-                            <h2 class="post-title">
-                                <router-link to="/blog-details"
-                                    title="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua">Sed do
-                                    eiusmod tempor incididunt ut labore et dolore magna aliqua</router-link>
-                            </h2>
-                            <p class="post-excerpt">Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-                                labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                                ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                                    <div class="post-img">
+                                        <img :src="blog.image_url ? blog.image_url : '/assets/img/blog/blog-post-1.webp'"
+                                            alt="" class="img-fluid">
+                                    </div>
+
+                                    <p class="post-category">{{ blog.category.name }}</p>
+
+                                    <h2 class="title">
+                                        <router-link :to="`/blog-detail/${blog.slug}`">{{ blog.title }}</router-link>
+                                    </h2>
+
+                                    <div class="d-flex align-items-center">
+                                        <img src="/dist/assets/img/person/demoUser.png" alt=""
+                                            class="img-fluid post-author-img flex-shrink-0">
+                                        <div class="post-meta">
+                                            <p class="post-author">{{ blog.author }}</p>
+                                            <p class="post-date">
+                                                <time datetime="{{formatDate(blog.created_at)}}">{{
+                                                    formatDate(blog.created_at) }}</time>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                </article>
+                            </div><!-- End post list item -->
+
                         </div>
-                    </article><!-- End Main Featured Post -->
+                    </div>
 
-                    <!-- Secondary Featured Posts -->
-                    <div class="secondary-features">
-                        <article class="blog-item" data-aos="fade-up" data-aos-delay="100">
-                            <img src="/assets/img/blog/blog-post-portrait-1.webp" alt="Blog Image" class="img-fluid">
-                            <div class="blog-content">
-                                <div class="post-meta">
-                                    <span class="date">Apr. 13th, 2022</span>
-                                    <span class="category">Business</span>
-                                </div>
-                                <h3 class="post-title">
-                                    <router-link to="/blog-details"
-                                        title="Ut enim ad minim veniam quis nostrud exercitation">Ut enim ad minim
-                                        veniam quis nostrud exercitation</router-link>
-                                </h3>
-                            </div>
-                        </article>
+                </section><!-- /Blog Posts Section -->
 
-                        <article class="blog-item" data-aos="fade-up" data-aos-delay="200">
-                            <img src="/assets/img/blog/blog-post-portrait-2.webp" alt="Blog Image" class="img-fluid">
-                            <div class="blog-content">
-                                <div class="post-meta">
-                                    <span class="date">Apr. 12th, 2022</span>
-                                    <span class="category">Lifestyle</span>
-                                </div>
-                                <h3 class="post-title">
-                                    <router-link to="/blog-details"
-                                        title="Duis aute irure dolor in reprehenderit in voluptate">Duis aute irure
-                                        dolor in reprehenderit in voluptate</router-link>
-                                </h3>
-                            </div>
-                        </article>
-                    </div><!-- End Secondary Features -->
+                <!-- Pagination 2 Section -->
+                <!-- <section id="pagination-2" class="pagination-2 section">
 
-                    <!-- Regular Posts Grid -->
-                    <div class="regular-posts">
-                        <article class="blog-item" data-aos="fade-up" data-aos-delay="300">
-                            <img src="/assets/img/blog/blog-post-9.webp" alt="Blog Image" class="img-fluid">
-                            <div class="blog-content">
-                                <div class="post-meta">
-                                    <span class="date">Apr. 11th, 2022</span>
-                                    <span class="category">Tech</span>
-                                </div>
-                                <h3 class="post-title">
-                                    <router-link to="/blog-details"
-                                        title="Excepteur sint occaecat cupidatat non proident">Excepteur sint occaecat
-                                        cupidatat non proident</router-link>
-                                </h3>
-                            </div>
-                        </article>
+                    <div class="container">
+                        <div class="d-flex justify-content-center">
+                            <ul>
+                                <li><a href="#"><i class="bi bi-chevron-left"></i></a></li>
+                                <li><a href="#">1</a></li>
+                                <li><a href="#" class="active">2</a></li>
+                                <li><a href="#">3</a></li>
+                                <li><a href="#">4</a></li>
+                                <li>...</li>
+                                <li><a href="#">10</a></li>
+                                <li><a href="#"><i class="bi bi-chevron-right"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
 
-                        <article class="blog-item" data-aos="fade-up" data-aos-delay="400">
-                            <img src="/assets/img/blog/blog-post-3.webp" alt="Blog Image" class="img-fluid">
-                            <div class="blog-content">
-                                <div class="post-meta">
-                                    <span class="date">Apr. 10th, 2022</span>
-                                    <span class="category">Sports</span>
-                                </div>
-                                <h3 class="post-title">
-                                    <router-link to="/blog-details"
-                                        title="Sunt in culpa qui officia deserunt mollit anim">Sunt in culpa qui officia
-                                        deserunt mollit anim</router-link>
-                                </h3>
-                            </div>
-                        </article>
-
-                        <article class="blog-item" data-aos="fade-up" data-aos-delay="500">
-                            <img src="/assets/img/blog/blog-post-6.webp" alt="Blog Image" class="img-fluid">
-                            <div class="blog-content">
-                                <div class="post-meta">
-                                    <span class="date">Apr. 9th, 2022</span>
-                                    <span class="category">Culture</span>
-                                </div>
-                                <h3 class="post-title">
-                                    <router-link to="/blog-details"
-                                        title="Id est laborum et dolorum fuga et harum quidem">Id est laborum et dolorum
-                                        fuga et harum quidem</router-link>
-                                </h3>
-                            </div>
-                        </article>
-                    </div><!-- End Regular Posts -->
-
-                </div>
-
+                </section> -->
+                <!-- /Pagination 2 Section -->
             </div>
-
-        </section><!-- /Blog Hero Section -->
-
-        <!-- Blog Posts Section -->
-        <section id="blog-posts" class="blog-posts section">
-
-            <div class="container" data-aos="fade-up" data-aos-delay="100">
-                <div class="row gy-4">
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-1.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Politics</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Dolorum optio tempore voluptas dignissimos</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-f-12.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Maria Doe</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Jan 1, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-2.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Sports</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Nisi magni odit consequatur autem nulla dolorem</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-f-13.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Allisa Mayer</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Jun 5, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-3.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Entertainment</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Possimus soluta ut id suscipit ea ut in quo quia et
-                                    soluta</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-m-10.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Mark Dower</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Jun 22, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-4.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Sports</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Non rem rerum nam cum quo minus olor distincti</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-f-14.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Lisa Neymar</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Jun 30, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-5.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Politics</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Accusamus quaerat aliquam qui debitis facilis
-                                    consequatur</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-m-11.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Denis Peterson</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Jan 30, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                    <div class="col-lg-4">
-                        <article>
-
-                            <div class="post-img">
-                                <img src="/assets/img/blog/blog-post-6.webp" alt="" class="img-fluid">
-                            </div>
-
-                            <p class="post-category">Entertainment</p>
-
-                            <h2 class="title">
-                                <router-link to="/blog-details">Distinctio provident quibusdam numquam aperiam aut</router-link>
-                            </h2>
-
-                            <div class="d-flex align-items-center">
-                                <img src="/assets/img/person/person-f-15.webp" alt=""
-                                    class="img-fluid post-author-img flex-shrink-0">
-                                <div class="post-meta">
-                                    <p class="post-author">Mika Lendon</p>
-                                    <p class="post-date">
-                                        <time datetime="2022-01-01">Feb 14, 2022</time>
-                                    </p>
-                                </div>
-                            </div>
-
-                        </article>
-                    </div><!-- End post list item -->
-
-                </div>
-            </div>
-
-        </section><!-- /Blog Posts Section -->
-
-        <!-- Pagination 2 Section -->
-        <section id="pagination-2" class="pagination-2 section">
-
-            <div class="container">
-                <div class="d-flex justify-content-center">
-                    <ul>
-                        <li><a href="#"><i class="bi bi-chevron-left"></i></a></li>
-                        <li><a href="#">1</a></li>
-                        <li><a href="#" class="active">2</a></li>
-                        <li><a href="#">3</a></li>
-                        <li><a href="#">4</a></li>
-                        <li>...</li>
-                        <li><a href="#">10</a></li>
-                        <li><a href="#"><i class="bi bi-chevron-right"></i></a></li>
-                    </ul>
-                </div>
-            </div>
-
-        </section><!-- /Pagination 2 Section -->
+        </div>
 
     </main>
 
 </template>
+<style>
+body {
+    overflow-x: hidden;
+}
+</style>

@@ -13,12 +13,12 @@
                 <ul>
                     <li><router-link to="/" class="nav-link" active-class="active"
                             style="cursor: pointer;">Home</router-link></li>
-                    <li><router-link to="/about" style="cursor: pointer;">About</router-link></li>
-                    <li><router-link to="/destinations">Destinations</router-link></li>
-                    <li><router-link to="/tours">Tours</router-link></li>
-                    <li><router-link to="/activity">Activities</router-link></li>
-                    <li><router-link to="/gallary">Gallery</router-link></li>
-                    <li><router-link to="/blogs">Blog</router-link></li>
+                    <li><router-link to="/about" style="cursor: pointer;" active-class="active">About</router-link></li>
+                    <li><router-link to="/destinations" active-class="active">Destinations</router-link></li>
+                    <li><router-link to="/tours" active-class="active">Tours</router-link></li>
+                    <li><router-link to="/activity" active-class="active">Activities</router-link></li>
+                    <li><router-link to="/gallary" active-class="active">Gallery</router-link></li>
+                    <li><router-link to="/blogs" active-class="active">Blog</router-link></li>
                     <!-- <li class="dropdown"><a href="#"><span>More Pages</span> <i
                                 class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
@@ -29,9 +29,9 @@
                         </ul>
                     </li> -->
 
-                    <li><router-link to="/contact">Contact</router-link></li>
+                    <li><router-link to="/contact" active-class="active">Contact</router-link></li>
                     <!-- Dynamic Auth Links -->
-                    <li v-if="!user"><router-link to="/login">Login</router-link></li>
+                    <li v-if="!user"><router-link to="/login" active-class="active">Login</router-link></li>
                     <li v-else class="dropdown">
                         <a href="#" style="cursor: pointer;">
                             <i class="fa fa-person"></i> {{ user.name }} <i class="bi bi-chevron-down toggle-dropdown"></i>

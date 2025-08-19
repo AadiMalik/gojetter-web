@@ -453,7 +453,7 @@ async function fetchActivities() {
 
 
                 <!-- CTA Section -->
-                <div class="row" data-aos="fade-up" data-aos-delay="700">
+                <!-- <div class="row" data-aos="fade-up" data-aos-delay="700">
                     <div class="col-12">
                         <div class="cta-section text-center">
                             <h3>Not Sure What to Choose?</h3>
@@ -465,7 +465,7 @@ async function fetchActivities() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
             </div>
 

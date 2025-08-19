@@ -11,7 +11,6 @@ const destinations = ref([]);
 
 const selectedDestination = ref('');
 const selectedCategory = ref('');
-const selectedDuration = ref('');
 const selectedPrice = ref('');
 
 onMounted(async () => {
@@ -52,7 +51,6 @@ async function fetchToursAndActivity() {
         const params = {};
         if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
-        if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
         const [toursRes, activitiesRes] = await Promise.all([
             api.get('/tour-list', { params }),
@@ -111,7 +109,7 @@ async function fetchToursAndActivity() {
                         <div class="card">
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="col-lg-4 col-md-6 mb-3 mt-3">
                                         <select class="form-select" v-model="selectedDestination"
                                             @change="fetchToursAndActivity">
                                             <option value="">Select Destination</option>
@@ -121,7 +119,7 @@ async function fetchToursAndActivity() {
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="col-lg-4 col-md-6 mb-3 mt-3">
                                         <select class="form-select" v-model="selectedCategory"
                                             @change="fetchToursAndActivity">
                                             <option value="">Category</option>
@@ -130,7 +128,7 @@ async function fetchToursAndActivity() {
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-lg-3 col-md-6 mb-3">
+                                    <!-- <div class="col-lg-3 col-md-6 mb-3">
                                         <select class="form-select" v-model="selectedDuration"
                                             @change="fetchToursAndActivity">
                                             <option value="">Duration</option>
@@ -139,8 +137,8 @@ async function fetchToursAndActivity() {
                                             <option value="8-14">8-14 Days</option>
                                             <option value="15+">15+ Days</option>
                                         </select>
-                                    </div>
-                                    <div class="col-lg-3 col-md-6 mb-3">
+                                    </div> -->
+                                    <div class="col-lg-4 col-md-6 mb-3 mt-3">
                                         <select class="form-select" v-model="selectedPrice"
                                             @change="fetchToursAndActivity">
                                             <option value="">Price Range</option>
