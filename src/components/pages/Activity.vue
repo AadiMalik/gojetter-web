@@ -102,6 +102,33 @@ async function toggleWishlist(activity) {
         console.error("Wishlist error:", err);
     }
 }
+// 👉 Remove to wishlist
+async function removeWishlist(activity) {
+    if (!isLoggedIn()) {
+        router.push('/login');
+        return;
+    }
+
+    if (activity.is_wishlist === 0) {
+        toast.error("This activity is not in wishlist");
+        return;
+    }
+
+    try {
+        const res = await api.post(
+            '/delete-wishlist',
+            { activity_id: activity.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        if (res.data?.Success) {
+            activity.is_wishlist = 0; // mark as added
+            toast.success(res.data?.Message);
+        }
+    } catch (err) {
+        console.error("Wishlist error:", err);
+    }
+}
 </script>
 
 <template>
@@ -507,7 +534,7 @@ async function toggleWishlist(activity) {
                                                 <div class="col-md-8"></div>
                                                 <div class="col-md-2"
                                                     :style="{ background: activity.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
-                                                    @click="toggleWishlist(activity)">
+                                                    @click="activity.is_wishlist === 1 ? removeWishlist(activity) : toggleWishlist(activity)">
                                                     <span class="bi bi-heart"
                                                         style="font-size: 20px; color:#fff; cursor:pointer;"></span>
                                                 </div>

@@ -110,6 +110,34 @@ async function toggleWishlist(tour) {
     }
 }
 
+// 👉 Remove to wishlist
+async function removeWishlist(tour) {
+    if (!isLoggedIn()) {
+        router.push('/login');
+        return;
+    }
+
+    if (tour.is_wishlist === 0) {
+        toast.error("This tour is not in wishlist");
+        return;
+    }
+
+    try {
+        const res = await api.post(
+            '/delete-wishlist',
+            { tour_id: tour.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        if (res.data?.Success) {
+            tour.is_wishlist = 0; // mark as added
+            toast.success(res.data?.Message);
+        }
+    } catch (err) {
+        console.error("Wishlist error:", err);
+    }
+}
+
 </script>
 
 
@@ -241,7 +269,7 @@ async function toggleWishlist(tour) {
                                             <div class="col-md-8"></div>
                                             <div class="col-md-2"
                                                 :style="{ background: tour.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
-                                                @click="toggleWishlist(tour)">
+                                                @click="tour.is_wishlist === 1 ? removeWishlist(tour) : toggleWishlist(tour)">
                                                 <span class="bi bi-heart"
                                                     style="font-size: 20px; color:#fff; cursor:pointer;"></span>
                                             </div>
