@@ -68,6 +68,7 @@ const addToCart = async () => {
                   })
             if (res.data?.Success) {
                   toast.success(res.data?.Message)
+                  router.push("/cart")
             } else {
                   toast.error(res.data?.Message || "Failed to add to cart")
             }

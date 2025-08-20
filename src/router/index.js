@@ -30,6 +30,7 @@ import TourDetail from '@/components/pages/TourDetail.vue'
 import ActivityDetail from '@/components/pages/ActivityDetail.vue'
 import BlogDetail from '@/components/pages/BlogDetail.vue';
 import Cart from '@/components/pages/Cart.vue';
+import Checkout from '@/components/pages/Checkout.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -50,6 +51,7 @@ const routes = [
   { path: '/privacy', component: Privacy },
   { path: '/contact', component: Contact },
   { path: '/cart', component: Cart, meta: { requiresAuth: true } },
+  { path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
 
   
   { path: '/blog-detail/:slug', name:'blog-detail', component: BlogDetail },

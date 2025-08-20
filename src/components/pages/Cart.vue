@@ -156,6 +156,12 @@ const formatDate = (dateStr) => {
                                           </tfoot>
                                     </table>
                               </div>
+                              
+                        </div>
+                        <div class="row">
+                              <div class="col-md-3 offset-md-9">
+                                    <router-link to="/checkout" class="btn btn-primary form-control" v-if="carts.length">Checkout</router-link>
+                              </div>
                         </div>
                   </div>
             </section>
