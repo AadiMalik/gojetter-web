@@ -29,6 +29,7 @@ import ChangePassword from '@/components/accounts/ChangePassword.vue'
 import TourDetail from '@/components/pages/TourDetail.vue'
 import ActivityDetail from '@/components/pages/ActivityDetail.vue'
 import BlogDetail from '@/components/pages/BlogDetail.vue';
+import Cart from '@/components/pages/Cart.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -48,6 +49,7 @@ const routes = [
   { path: '/terms', component: Terms },
   { path: '/privacy', component: Privacy },
   { path: '/contact', component: Contact },
+  { path: '/cart', component: Cart, meta: { requiresAuth: true } },
 
   
   { path: '/blog-detail/:slug', name:'blog-detail', component: BlogDetail },

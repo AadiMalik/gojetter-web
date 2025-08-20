@@ -30,15 +30,23 @@
                         </ul>
                     </li>
                     <!-- Dynamic Auth Links -->
-                    <li v-if="!user"><router-link to="/login" active-class="active">Login</router-link></li>
+                    <li v-if="!user">
+                        <router-link to="/login" active-class="active">
+                            <i class="bi bi-unlock" style="font-size: 18px;"></i> Login
+                        </router-link>
+                    </li>
                     <li v-else class="dropdown">
                         <a href="#" style="cursor: pointer;">
                             <span class="bi bi-person" style="font-size: 18px;"></span> {{ user.name }} <i
                                 class="bi bi-chevron-down toggle-dropdown"></i>
                         </a>
                         <ul>
-                            <li><router-link to="/account/booking">My Account</router-link></li>
-                            <li><a @click.prevent="logout" style="cursor: pointer;">Logout</a></li>
+                            <li><router-link to="/account/booking"> My Account</router-link></li>
+                            <li>
+                                <a @click.prevent="logout" style="cursor: pointer;">
+                                    Logout
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     <li v-if="user">
@@ -62,25 +70,13 @@
 <script setup>
 import { ref, onMounted, computed } from "vue"
 import { useAuthStore } from "@/store/auth"
+import { useCartStore } from '@/store/cart'
 import api from "@/api"
 
 const auth = useAuthStore()
+const cartStore = useCartStore()
 const user = computed(() => auth.user)
-
-const cartCount = ref(0)
-
-async function fetchCart() {
-    if (!auth.token) return
-    try {
-        const res = await api.get("/cart-list", {
-            headers: { Authorization: `Bearer ${auth.token}` }
-        })
-        cartCount.value = res.data?.Data?.length || 0
-    } catch (err) {
-        console.error("Cart fetch error", err)
-        cartCount.value = 0
-    }
-}
+const cartCount = computed(() => cartStore.carts.length)
 
 function logout() {
     auth.logout()
@@ -88,8 +84,6 @@ function logout() {
 }
 
 onMounted(() => {
-    if (auth.token) {
-        fetchCart()
-    }
+    if (user.value) cartStore.fetchCart()
 })
 </script>
