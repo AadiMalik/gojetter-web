@@ -15,13 +15,22 @@
                             style="cursor: pointer;">Home</router-link></li>
                     <li><router-link to="/tours" active-class="active">Tours</router-link></li>
                     <li><router-link to="/activity" active-class="active">Activities</router-link></li>
-                    <li><router-link to="/destinations" active-class="active">Destinations</router-link></li>
+                    <li class="dropdown"><a href="#"><span>Services</span> <i
+                                class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li v-for="service in services">
+                                <router-link :to="`/service/${service.slug}`">{{ service?.name }}</router-link>
+                            </li>
+                        </ul>
+                    </li>
                     <li><router-link to="/blogs" active-class="active">Blogs</router-link></li>
                     <li><router-link to="/about" style="cursor: pointer;" active-class="active">About</router-link></li>
                     <li><router-link to="/contact" active-class="active">Contact</router-link></li>
+
                     <li class="dropdown"><a href="#"><span>Pages</span> <i
                                 class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
+                            <li><router-link to="/destinations">Destinations</router-link></li>
                             <li><router-link to="/gallary">Gallery</router-link></li>
                             <li><router-link to="/testimonials">Testimonials</router-link></li>
                             <li><router-link to="/faqs">Frequently Asked Questions</router-link></li>
@@ -89,6 +98,7 @@ const cartStore = useCartStore()
 const user = computed(() => auth.user)
 const cartCount = computed(() => cartStore.carts.length)
 const currency = useCurrencyStore()
+const services = ref([]);
 
 function logout() {
     auth.logout()
@@ -96,7 +106,19 @@ function logout() {
 }
 
 onMounted(() => {
+    fetchService()
     currency?.fetchCurrencies()
     if (user.value) cartStore.fetchCart()
 })
+
+async function fetchService() {
+    try {
+        const res = await api.get('/service-list');
+        if (res.data?.Success) {
+            services.value = res.data.Data || [];
+        }
+    } catch (err) {
+        console.error('services fetch error:', err);
+    }
+}
 </script>

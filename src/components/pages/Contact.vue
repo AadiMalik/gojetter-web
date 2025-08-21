@@ -1,3 +1,43 @@
+<script setup>
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/api'
+import { toast } from 'vue3-toastify'
+
+const form = ref({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+})
+// submit form
+const submitForm = async () => {
+    try {
+        const formData = new FormData()
+        Object.entries(form.value).forEach(([key, value]) => {
+            if (value !== null && value !== '') {
+                formData.append(key, value)
+            }
+        })
+
+        const res = await api.post('/save-contact-us', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })
+
+        if (res.data?.Success) {
+            toast.success('Your message has been submitted successfully!')
+            // reset form
+            Object.keys(form.value).forEach(key => (form.value[key] = ''))
+        } else {
+            toast.error(res.data?.Message || 'Something went wrong!')
+        }
+    } catch (err) {
+        console.error(err)
+        toast.error('Failed to submit request.')
+    }
+}
+</script>
 <template>
     <main class="main">
 
@@ -80,14 +120,14 @@
                         <div class="contact-form-wrapper">
                             <h2 class="text-center mb-4">Get in Touch</h2>
 
-                            <form action="forms/contact.php" method="post" class="php-email-form">
+                            <div class="php-email-form">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <div class="input-with-icon">
                                                 <i class="bi bi-person"></i>
-                                                <input type="text" class="form-control" name="name"
-                                                    placeholder="First Name">
+                                                <input type="text" class="form-control" v-model="form.name" name="name"
+                                                    placeholder="Full Name" required>
                                             </div>
                                         </div>
                                     </div>
@@ -96,18 +136,27 @@
                                         <div class="form-group">
                                             <div class="input-with-icon">
                                                 <i class="bi bi-envelope"></i>
-                                                <input type="email" class="form-control" name="email"
-                                                    placeholder="Email Address">
+                                                <input type="email" v-model="form.email" class="form-control" name="email"
+                                                    placeholder="Email Address" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="input-with-icon">
+                                                <i class="bi bi-phone"></i>
+                                                <input type="text" v-model="form.phone" class="form-control" name="phone"
+                                                    placeholder="Phone Number" required>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <div class="input-with-icon">
                                                 <i class="bi bi-text-left"></i>
-                                                <input type="text" class="form-control" name="subject"
-                                                    placeholder="Subject">
+                                                <input type="text"  v-model="form.subject" class="form-control" name="subject"
+                                                    placeholder="Subject" required>
                                             </div>
                                         </div>
                                     </div>
@@ -116,23 +165,17 @@
                                         <div class="form-group">
                                             <div class="input-with-icon">
                                                 <i class="bi bi-chat-dots message-icon"></i>
-                                                <textarea class="form-control" name="message"
-                                                    placeholder="Write Message..." style="height: 180px"></textarea>
+                                                <textarea class="form-control" name="message"  v-model="form.message"
+                                                    placeholder="Write Message..." style="height: 180px" required></textarea>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="col-12">
-                                        <div class="loading">Loading</div>
-                                        <div class="error-message"></div>
-                                        <div class="sent-message">Your message has been sent. Thank you!</div>
-                                    </div>
-
                                     <div class="col-12 text-center">
-                                        <button type="submit" class="btn btn-primary btn-submit">SEND MESSAGE</button>
+                                        <button type="button" class="btn btn-primary btn-submit" @click="submitForm">SEND MESSAGE</button>
                                     </div>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>

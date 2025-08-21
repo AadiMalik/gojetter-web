@@ -31,6 +31,8 @@ import ActivityDetail from '@/components/pages/ActivityDetail.vue'
 import BlogDetail from '@/components/pages/BlogDetail.vue';
 import Cart from '@/components/pages/Cart.vue';
 import Checkout from '@/components/pages/Checkout.vue';
+import ServiceDetail from '@/components/pages/ServiceDetail.vue';
+import SubServiceDetail from '@/components/pages/SubServiceDetail.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -57,6 +59,8 @@ const routes = [
   { path: '/blog-detail/:slug', name:'blog-detail', component: BlogDetail },
   { path: '/tour-detail/:slug', name:'tour-detail', component: TourDetail },
   { path: '/activity-detail/:slug', name:'activity-detail', component: ActivityDetail },
+  { path: '/service/:slug', name:'service-detail', component: ServiceDetail },
+  { path: '/sub-service/:slug', name:'sub-service-detail', component: SubServiceDetail },
 
 
   {
