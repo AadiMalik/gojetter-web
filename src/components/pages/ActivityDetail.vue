@@ -8,6 +8,9 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -327,8 +330,8 @@ const postReview = async () => {
                                                       {{ formatDate(date.date) }}
                                                       <b>${{ (date.discount_price &&
                                                             date.discount_price > 0
-                                                            ? date.discount_price
-                                                            : date.price)
+                                                            ? currency.format(date.discount_price)
+                                                            : currency.format(date.price))
                                                             }}</b>
 
                                                       <span v-if="isPastCutoff(date)" class="text-danger ms-2">(Booking
@@ -584,20 +587,20 @@ const postReview = async () => {
                                                                               v-if="Array.isArray(activity?.activity_date) && activity.activity_date.length > 0">
                                                                               <template
                                                                                     v-if="activity.activity_date[0].discount_price && activity.activity_date[0].discount_price > 0">
-                                                                                    <del class="text-danger">${{
-                                                                                          activity.activity_date[0].price
+                                                                                    <del class="text-danger">{{
+                                                                                          currency.format(activity.activity_date[0].price)
                                                                                           }}</del> <br>
-                                                                                    <span class="text-white">${{
-                                                                                          activity.activity_date[0].discount_price
+                                                                                    <span class="text-white">{{
+                                                                                          currency.format(activity.activity_date[0].discount_price)
                                                                                           }}</span>
                                                                               </template>
                                                                               <template v-else>
-                                                                                    ${{ activity.activity_date[0].price
+                                                                                    {{ currency.format(activity.activity_date[0].price)
                                                                                     }}
                                                                               </template>
                                                                         </template>
                                                                         <template v-else>
-                                                                              $0
+                                                                              {{currency.format(0)}}
                                                                         </template>
                                                                   </div>
                                                             </div>

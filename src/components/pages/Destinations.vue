@@ -2,6 +2,9 @@
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
 import api from '@/api';
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 const tours_data = ref([]);
 const activity_data = ref([]);
@@ -184,12 +187,12 @@ async function fetchToursAndActivity() {
                                                         tour?.duration
                                                         }}</span>
                                                     <span class="starting-price">
-                                                        ${{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
+                                                        {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
                                                             ? (tour.tour_date[0].discount_price &&
                                                                 tour.tour_date[0].discount_price > 0
-                                                                ? tour.tour_date[0].discount_price
-                                                                : tour.tour_date[0].price)
-                                                            : 0
+                                                                ? currency.format(tour.tour_date[0].discount_price)
+                                                                : currency.format(tour.tour_date[0].price))
+                                                            : currency.format(0)
                                                         }}
                                                     </span>
                                                 </div>
@@ -237,12 +240,12 @@ async function fetchToursAndActivity() {
                                                         activity?.duration
                                                         }}</span>
                                                     <span class="starting-price">
-                                                        ${{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
+                                                        {{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
                                                             ? (activity.activity_date[0].discount_price &&
                                                                 activity.activity_date[0].discount_price > 0
-                                                        ? activity.activity_date[0].discount_price
-                                                        : activity.activity_date[0].price)
-                                                        : 0
+                                                        ? currency.format(activity.activity_date[0].discount_price)
+                                                        : currency.format(activity.activity_date[0].price))
+                                                        : currency.format(0)
                                                         }}
                                                     </span>
                                                 </div>

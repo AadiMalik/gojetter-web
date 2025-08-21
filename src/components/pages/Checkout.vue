@@ -6,6 +6,9 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import { toast } from 'vue3-toastify'
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 // Initialize router
 const router = useRouter()
@@ -268,7 +271,7 @@ async function completeOrder() {
             // Prepare order data according to API requirements
             const orderData = {
                   card_id: selectedCardId.value,
-                  currency_id: 1, // Hardcoded as per requirement
+                  currency_id: currency.selected.id, 
                   first_name: personalInfo.value.first_name,
                   last_name: personalInfo.value.last_name,
                   email: personalInfo.value.email,
@@ -276,8 +279,8 @@ async function completeOrder() {
                   country: addressInfo.value.country,
                   zipcode: addressInfo.value.zipcode,
                   address: addressInfo.value.address,
-                  discount: discountAmount.value,
-                  payment_method: 'stripe', // Hardcoded as per requirement
+                  discount: discountAmount.value * currency.selected.rate,
+                  payment_method: 'stripe',
                   coupon_id: appliedCoupon.value?.id || null
             }
 
@@ -292,7 +295,7 @@ async function completeOrder() {
                   toast.success('Order placed successfully!')
 
                   // Clear cart and redirect
-                  cartStore.clearCart()
+                  // cartStore.clearCart()
                   router.push('/account/order')
             } else {
                   toast.error(response.data.Message || 'Failed to place order')
@@ -722,10 +725,10 @@ async function completeOrder() {
                                                       <tr v-for="cart in carts">
                                                             <td>
                                                                   {{ cart.activity.title }} <br>
-                                                                  <small>Price: ${{ (cart?.activity_date?.discount_price
+                                                                  <small>Price: {{ (cart?.activity_date?.discount_price
                                                                         && cart?.activity_date?.discount_price > 0)
-                                                                        ? cart?.activity_date?.discount_price
-                                                                        : cart?.activity_date?.price }}</small>
+                                                                        ? currency.format(cart?.activity_date?.discount_price)
+                                                                        : currency.format(cart?.activity_date?.price) }}</small>
                                                             </td>
                                                             <td style="text-align: right;">
                                                                   {{ cart?.quantity }}
@@ -737,7 +740,7 @@ async function completeOrder() {
                                           <div class="price-breakdown">
                                                 <div class="price-item">
                                                       <span class="description">Subtotal</span>
-                                                      <span class="amount">${{ cartStore.cartTotal }}</span>
+                                                      <span class="amount">{{ currency.format(cartStore.cartTotal) }}</span>
                                                 </div>
 
                                                 <!-- Discount row -->
@@ -748,15 +751,15 @@ async function completeOrder() {
                                                                   ({{ appliedCoupon.value }}%)
                                                             </span>
                                                             <span v-if="appliedCoupon.type === 'amount'">
-                                                                  (${{ appliedCoupon.value }} off)
+                                                                  ({{ currency.format(appliedCoupon.value) }} off)
                                                             </span>
                                                       </span>
-                                                      <span class="amount text-danger">- ${{ discountAmount }}</span>
+                                                      <span class="amount text-danger">- {{ currency.format(discountAmount) }}</span>
                                                 </div>
 
                                                 <div class="price-total">
                                                       <span class="description">Total Amount</span>
-                                                      <span class="amount">${{ totalAmount }}</span>
+                                                      <span class="amount">{{ currency.format(totalAmount) }}</span>
                                                 </div>
                                           </div>
 

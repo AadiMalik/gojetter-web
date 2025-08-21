@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router';
 import api from '@/api';
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 const data = ref([]);
 const categories = ref([]);
@@ -238,17 +241,17 @@ async function removeWishlist(tour) {
                                                 v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
                                                 <template
                                                     v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
-                                                    <del class="text-danger">${{ tour.tour_date[0].price }}</del>
+                                                    <del class="text-danger">{{ currency.format(tour.tour_date[0].price) }}</del>
                                                     <br>
-                                                    <span class="text-white">${{ tour.tour_date[0].discount_price
+                                                    <span class="text-white">{{ currency.format(tour.tour_date[0].discount_price)
                                                         }}</span>
                                                 </template>
                                                 <template v-else>
-                                                    ${{ tour.tour_date[0].price }}
+                                                    {{ currency.format(tour.tour_date[0].price) }}
                                                 </template>
                                             </template>
                                             <template v-else>
-                                                $0
+                                                {{currency.format(0)}}
                                             </template>
                                         </div>
                                     </div>

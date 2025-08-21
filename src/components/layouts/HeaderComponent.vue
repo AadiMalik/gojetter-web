@@ -58,6 +58,16 @@
                             </span>
                         </router-link>
                     </li>
+                    <li class="dropdown">
+                        <a href="#"><span>{{ currency?.selected?.code }}</span> <i class="bi bi-chevron-down"></i></a>
+                        <ul>
+                            <li v-for="cur in currency?.currencies" :key="cur?.id">
+                                <a @click.prevent="currency?.changeCurrency(cur)" style="cursor: pointer;">
+                                    {{ cur?.symbol }} - {{ cur?.code }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
@@ -71,12 +81,14 @@
 import { ref, onMounted, computed } from "vue"
 import { useAuthStore } from "@/store/auth"
 import { useCartStore } from '@/store/cart'
+import { useCurrencyStore } from "@/store/currency"
 import api from "@/api"
 
 const auth = useAuthStore()
 const cartStore = useCartStore()
 const user = computed(() => auth.user)
 const cartCount = computed(() => cartStore.carts.length)
+const currency = useCurrencyStore()
 
 function logout() {
     auth.logout()
@@ -84,6 +96,7 @@ function logout() {
 }
 
 onMounted(() => {
+    currency?.fetchCurrencies()
     if (user.value) cartStore.fetchCart()
 })
 </script>

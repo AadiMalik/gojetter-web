@@ -7,6 +7,9 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -289,10 +292,10 @@ const postReview = async () => {
                                                             class="d-none" />
                                                       {{ formatDate(date.start_date) }} - {{
                                                             formatDate(date.end_date) }} <br />
-                                                      <b>${{ (date.discount_price &&
+                                                      <b>{{ currency.format((date.discount_price &&
                                                             date.discount_price > 0
                                                             ? date.discount_price
-                                                            : date.price)
+                                                            : date.price))
                                                       }}</b>
                                                       {{ date.price_type === 'per_person' ? 'per person' : 'Group'
                                                       }}
@@ -572,19 +575,19 @@ const postReview = async () => {
                                                                               v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
                                                                               <template
                                                                                     v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
-                                                                                    <del class="text-danger">${{
-                                                                                          tour.tour_date[0].price
+                                                                                    <del class="text-danger">{{
+                                                                                          currency.format(tour.tour_date[0].price)
                                                                                           }}</del> <br>
-                                                                                    <span class="text-white">${{
-                                                                                          tour.tour_date[0].discount_price
+                                                                                    <span class="text-white">{{
+                                                                                          currency.format(tour.tour_date[0].discount_price)
                                                                                           }}</span>
                                                                               </template>
                                                                               <template v-else>
-                                                                                    ${{ tour.tour_date[0].price }}
+                                                                                    {{ currency.format(tour.tour_date[0].price) }}
                                                                               </template>
                                                                         </template>
                                                                         <template v-else>
-                                                                              $0
+                                                                              {{currency.format(0)}}
                                                                         </template>
                                                                   </div>
                                                             </div>

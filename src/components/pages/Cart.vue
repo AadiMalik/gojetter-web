@@ -5,8 +5,10 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import { toast } from 'vue3-toastify'
-
 import { storeToRefs } from 'pinia'
+import { useCurrencyStore } from "@/store/currency"
+
+const currency = useCurrencyStore()
 
 const cartStore = useCartStore()
 const { carts } = storeToRefs(cartStore)
@@ -115,8 +117,8 @@ const formatDate = (dateStr) => {
                                                             {{ item?.activity?.title }} <br>
                                                             {{ (item?.activity_date?.discount_price &&
                                                                   item?.activity_date?.discount_price > 0)
-                                                                  ? item?.activity_date?.discount_price
-                                                            : item?.activity_date?.price }}
+                                                                  ? currency.format(item?.activity_date?.discount_price)
+                                                            : currency.format(item?.activity_date?.price) }}
                                                       </td>
                                                       <td class="text-center">
                                                             {{ formatDate(item?.activity_date?.date) }}
@@ -134,8 +136,8 @@ const formatDate = (dateStr) => {
                                                             {{
                                                                   ((item?.activity_date?.discount_price &&
                                                                         item?.activity_date?.discount_price > 0)
-                                                                        ? item?.activity_date?.discount_price
-                                                            : item?.activity_date?.price) * item?.quantity
+                                                                        ? currency.format(item?.activity_date?.discount_price)
+                                                            : currency.format(item?.activity_date?.price * item?.quantity))
                                                             }}
                                                       </td>
                                                       <td class="text-center">
@@ -150,7 +152,7 @@ const formatDate = (dateStr) => {
                                                 <tr>
                                                       <th colspan="4" style="text-align:right;">Total</th>
                                                       <th style="text-align:right;">{{ cartStore.cartCount }}</th>
-                                                      <th style="text-align:right;">{{ cartStore.cartTotal }}</th>
+                                                      <th style="text-align:right;">{{ currency.format(cartStore.cartTotal) }}</th>
                                                       <th></th>
                                                 </tr>
                                           </tfoot>
