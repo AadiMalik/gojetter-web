@@ -180,7 +180,7 @@ function showOrderDetails(order) {
                 <table class="table table-sm">
                   <thead>
                     <tr>
-                      <th>Product</th>
+                      <th>Activity</th>
                       <th>Date</th>
                       <th>Time Slot</th>
                       <th>Quantity</th>
