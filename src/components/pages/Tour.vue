@@ -2,11 +2,13 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api';
-import { toast } from 'vue3-toastify'
-import 'vue3-toastify/dist/index.css'
-import { useCurrencyStore } from "@/store/currency"
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+import { useCurrencyStore } from "@/store/currency";
+import { useAuthStore } from '@/store/auth';
 
-const currency = useCurrencyStore()
+const currency = useCurrencyStore();
+const authStore = useAuthStore();
 
 const data = ref([]);
 const categories = ref([]);
@@ -21,127 +23,120 @@ const loading = ref(true);
 const router = useRouter();
 
 onMounted(async () => {
-    await fetchData();
+  await fetchData();
 });
 
+// ✅ no need for localStorage check anymore
 function isLoggedIn() {
-    return !!localStorage.getItem("token");
+  return !!authStore.user;
 }
 
 async function fetchData() {
-    try {
-        const headers = {};
-        if (isLoggedIn()) {
-            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
-        }
+  try {
+    const params = {};
 
-        const [toursRes, categoriesRes] = await Promise.all([
-            api.get('/tour-list', { headers }),
-            api.get('/tour-category-list')
-        ]);
-
-        if (toursRes.data?.Success) {
-            data.value = toursRes.data.Data.data || [];
-            destinations.value = toursRes.data.Data.destinations || [];
-        }
-
-        if (categoriesRes.data?.Success) {
-            categories.value = categoriesRes.data.Data || [];
-        }
-
-    } catch (err) {
-        console.error('Fetch error:', err);
-    } finally {
-        loading.value = false;
+    if (isLoggedIn()) {
+      params.user_id = authStore.user.id;
     }
+
+    const [toursRes, categoriesRes] = await Promise.all([
+      api.get('/tour-list', { params }),
+      api.get('/tour-category-list')
+    ]);
+
+    if (toursRes.data?.Success) {
+      data.value = toursRes.data.Data.data || [];
+      destinations.value = toursRes.data.Data.destinations || [];
+    }
+
+    if (categoriesRes.data?.Success) {
+      categories.value = categoriesRes.data.Data || [];
+    }
+
+  } catch (err) {
+    console.error('Fetch error:', err);
+  } finally {
+    loading.value = false;
+  }
 }
 
-// Fetch tours with filters
+// ✅ unified params
 async function fetchTours() {
-    try {
-        loading.value = true;
+  try {
+    loading.value = true;
+    const params = {};
 
-        const headers = {};
-        if (isLoggedIn()) {
-            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
-        }
-
-        const params = {};
-        if (selectedDestination.value) params.destination_id = selectedDestination.value;
-        if (selectedCategory.value) params.category_id = selectedCategory.value;
-        if (selectedDuration.value) params.duration = selectedDuration.value;
-        if (selectedPrice.value) params.sort_by = selectedPrice.value;
-
-        const res = await api.get('/tour-list', { params, headers });
-
-        if (res.data?.Success) {
-            data.value = res.data.Data.data || [];
-            destinations.value = res.data.Data.destinations || [];
-        }
-    } catch (err) {
-        console.error('Filter fetch error:', err);
-    } finally {
-        loading.value = false;
+    if (isLoggedIn()) {
+      params.user_id = authStore.user.id;
     }
+
+    if (selectedDestination.value) params.destination_id = selectedDestination.value;
+    if (selectedCategory.value) params.category_id = selectedCategory.value;
+    if (selectedDuration.value) params.duration = selectedDuration.value;
+    if (selectedPrice.value) params.sort_by = selectedPrice.value;
+
+    const res = await api.get('/tour-list', { params });
+
+    if (res.data?.Success) {
+      data.value = res.data.Data.data || [];
+      destinations.value = res.data.Data.destinations || [];
+    }
+  } catch (err) {
+    console.error('Filter fetch error:', err);
+  } finally {
+    loading.value = false;
+  }
 }
 
 // 👉 Add to wishlist
 async function toggleWishlist(tour) {
-    if (!isLoggedIn()) {
-        router.push('/login');
-        return;
-    }
+  if (!isLoggedIn()) {
+    router.push('/login');
+    return;
+  }
 
-    if (tour.is_wishlist === 1) {
-        toast.error("This tour is already in wishlist");
-        return;
-    }
+  if (tour.is_wishlist === 1) {
+    toast.error("This tour is already in wishlist");
+    return;
+  }
 
-    try {
-        const res = await api.post(
-            '/save-wishlist',
-            { tour_id: tour.id },
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
+  try {
+    const res = await api.post('/save-wishlist', { tour_id: tour.id });
 
-        if (res.data?.Success) {
-            tour.is_wishlist = 1; // mark as added
-            toast.success(res.data?.Message);
-        }
-    } catch (err) {
-        console.error("Wishlist error:", err);
+    if (res.data?.Success) {
+      tour.is_wishlist = 1;
+      toast.success(res.data?.Message);
     }
+  } catch (err) {
+    console.error("Wishlist error:", err);
+  }
 }
 
-// 👉 Remove to wishlist
+// 👉 Remove from wishlist
 async function removeWishlist(tour) {
-    if (!isLoggedIn()) {
-        router.push('/login');
-        return;
-    }
+  if (!isLoggedIn()) {
+    router.push('/login');
+    return;
+  }
 
-    if (tour.is_wishlist === 0) {
-        toast.error("This tour is not in wishlist");
-        return;
-    }
+  if (tour.is_wishlist === 0) {
+    toast.error("This tour is not in wishlist");
+    return;
+  }
 
-    try {
-        const res = await api.post(
-            '/delete-wishlist',
-            { tour_id: tour.id },
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
+  try {
+    const res = await api.post('/delete-wishlist', { tour_id: tour.id });
 
-        if (res.data?.Success) {
-            tour.is_wishlist = 0; // mark as added
-            toast.success(res.data?.Message);
-        }
-    } catch (err) {
-        console.error("Wishlist error:", err);
+    if (res.data?.Success) {
+      tour.is_wishlist = 0;
+      toast.success(res.data?.Message);
     }
+  } catch (err) {
+    console.error("Wishlist error:", err);
+  }
 }
-
 </script>
+
 
 
 <template>
@@ -241,17 +236,19 @@ async function removeWishlist(tour) {
                                                 v-if="Array.isArray(tour?.tour_date) && tour.tour_date.length > 0">
                                                 <template
                                                     v-if="tour.tour_date[0].discount_price && tour.tour_date[0].discount_price > 0">
-                                                    <del class="text-danger">{{ currency.format(tour.tour_date[0].price) }}</del>
+                                                    <del class="text-danger">{{ currency.format(tour.tour_date[0].price)
+                                                    }}</del>
                                                     <br>
-                                                    <span class="text-white">{{ currency.format(tour.tour_date[0].discount_price)
-                                                        }}</span>
+                                                    <span class="text-white">{{
+                                                        currency.format(tour.tour_date[0].discount_price)
+                                                    }}</span>
                                                 </template>
                                                 <template v-else>
                                                     {{ currency.format(tour.tour_date[0].price) }}
                                                 </template>
                                             </template>
                                             <template v-else>
-                                                {{currency.format(0)}}
+                                                {{ currency.format(0) }}
                                             </template>
                                         </div>
                                     </div>

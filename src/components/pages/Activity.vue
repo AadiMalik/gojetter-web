@@ -1,11 +1,15 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import api from '@/api';
-import { toast } from 'vue3-toastify'
-import 'vue3-toastify/dist/index.css'
-import { useCurrencyStore } from "@/store/currency"
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+import { useCurrencyStore } from "@/store/currency";
+import { useAuthStore } from '@/store/auth';
+import { useRouter } from 'vue-router';
 
-const currency = useCurrencyStore()
+const currency = useCurrencyStore();
+const authStore = useAuthStore();
+const router = useRouter();
 
 const data = ref([]);
 const categories = ref([]);
@@ -21,18 +25,21 @@ const loading = ref(true);
 onMounted(async () => {
     await fetchData();
 });
+
 function isLoggedIn() {
-    return !!localStorage.getItem("token");
+    return !!authStore.user;
 }
 
 async function fetchData() {
     try {
-        const headers = {};
+        const params = {};
+
         if (isLoggedIn()) {
-            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
+            params.user_id = authStore.user.id;
         }
+
         const [activitiesRes, categoriesRes] = await Promise.all([
-            api.get('/activity-list', { headers }),
+            api.get('/activity-list', { params }),
             api.get('/tour-category-list')
         ]);
 
@@ -52,21 +59,22 @@ async function fetchData() {
     }
 }
 
-// Fetch activites with filters
+// Fetch activities with filters
 async function fetchActivities() {
     try {
         loading.value = true;
-        const headers = {};
-        if (isLoggedIn()) {
-            headers['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
-        }
         const params = {};
+
+        if (isLoggedIn()) {
+            params.user_id = authStore.user.id;
+        }
+
         if (selectedDestination.value) params.destination_id = selectedDestination.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedDuration.value) params.duration = selectedDuration.value;
         if (selectedPrice.value) params.sort_by = selectedPrice.value;
 
-        const res = await api.get('/activity-list', { params, headers });
+        const res = await api.get('/activity-list', { params });
 
         if (res.data?.Success) {
             data.value = res.data.Data.data || [];
@@ -78,6 +86,7 @@ async function fetchActivities() {
         loading.value = false;
     }
 }
+
 // 👉 Add to wishlist
 async function toggleWishlist(activity) {
     if (!isLoggedIn()) {
@@ -91,21 +100,21 @@ async function toggleWishlist(activity) {
     }
 
     try {
-        const res = await api.post(
-            '/save-wishlist',
-            { activity_id: activity.id },
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
+        const res = await api.post('/save-wishlist', {
+            activity_id: activity.id,
+            user_id: authStore.user.id  // 👈 pass user_id explicitly
+        });
 
         if (res.data?.Success) {
-            activity.is_wishlist = 1; // mark as added
+            activity.is_wishlist = 1;
             toast.success(res.data?.Message);
         }
     } catch (err) {
         console.error("Wishlist error:", err);
     }
 }
-// 👉 Remove to wishlist
+
+// 👉 Remove from wishlist
 async function removeWishlist(activity) {
     if (!isLoggedIn()) {
         router.push('/login');
@@ -118,14 +127,13 @@ async function removeWishlist(activity) {
     }
 
     try {
-        const res = await api.post(
-            '/delete-wishlist',
-            { activity_id: activity.id },
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
+        const res = await api.post('/delete-wishlist', {
+            activity_id: activity.id,
+            user_id: authStore.user.id  // 👈 pass user_id explicitly
+        });
 
         if (res.data?.Success) {
-            activity.is_wishlist = 0; // mark as added
+            activity.is_wishlist = 0;
             toast.success(res.data?.Message);
         }
     } catch (err) {
@@ -133,6 +141,7 @@ async function removeWishlist(activity) {
     }
 }
 </script>
+
 
 <template>
     <main class="main">
@@ -495,55 +504,56 @@ async function removeWishlist(activity) {
                             </div>
                             <div class="col-lg-4 col-md-6 mb-4" v-for="activity in des.activities" :key="activity.id">
                                 <!-- <router-link :to="`/activity-detail/${activity.slug}`"> -->
-                                    <div class="tour-card">
-                                        <div class="tour-image">
-                                            <img :src="activity.thumbnail_url" alt="Tour image" class="img-fluid" />
-                                            <div class="tour-price">
+                                <div class="tour-card">
+                                    <div class="tour-image">
+                                        <img :src="activity.thumbnail_url" alt="Tour image" class="img-fluid" />
+                                        <div class="tour-price">
+                                            <template
+                                                v-if="Array.isArray(activity?.activity_date) && activity.activity_date.length > 0">
                                                 <template
-                                                    v-if="Array.isArray(activity?.activity_date) && activity.activity_date.length > 0">
-                                                    <template
-                                                        v-if="activity.activity_date[0].discount_price && activity.activity_date[0].discount_price > 0">
-                                                        <del class="text-danger">{{ currency.format(activity.activity_date[0].price)
-                                                            }}</del>
-                                                        <br>
-                                                        <span class="text-white">{{
-                                                            currency.format(activity.activity_date[0].discount_price)
-                                                            }}</span>
-                                                    </template>
-                                                    <template v-else>
-                                                        {{ currency.format(activity.activity_date[0].price) }}
-                                                    </template>
+                                                    v-if="activity.activity_date[0].discount_price && activity.activity_date[0].discount_price > 0">
+                                                    <del class="text-danger">{{
+                                                        currency.format(activity.activity_date[0].price)
+                                                        }}</del>
+                                                    <br>
+                                                    <span class="text-white">{{
+                                                        currency.format(activity.activity_date[0].discount_price)
+                                                    }}</span>
                                                 </template>
                                                 <template v-else>
-                                                    {{currency.format(0)}}
+                                                    {{ currency.format(activity.activity_date[0].price) }}
                                                 </template>
-                                            </div>
+                                            </template>
+                                            <template v-else>
+                                                {{ currency.format(0) }}
+                                            </template>
                                         </div>
-                                        <div class="tour-content">
-                                            <h4 class="one-line">{{ activity.title }}</h4>
-                                            <p v-html="activity.short_description" class="one-line"></p>
-                                            <div class="tour-details">
-                                                <span><i class="bi bi-clock"></i> {{ activity.duration }}</span>
+                                    </div>
+                                    <div class="tour-content">
+                                        <h4 class="one-line">{{ activity.title }}</h4>
+                                        <p v-html="activity.short_description" class="one-line"></p>
+                                        <div class="tour-details">
+                                            <span><i class="bi bi-clock"></i> {{ activity.duration }}</span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-2"
+                                                style="background:#008cad; border-radius: 20px; text-align: center;">
+                                                <router-link :to="`/activity-detail/${activity.slug}`"
+                                                    title="View Activity" class="bt-outline-primary"
+                                                    style="font-size: 20px; color:#fff;">
+                                                    <span class="bi bi-eye"></span>
+                                                </router-link>
                                             </div>
-                                            <div class="row">
-                                                <div class="col-md-2"
-                                                    style="background:#008cad; border-radius: 20px; text-align: center;">
-                                                    <router-link :to="`/activity-detail/${activity.slug}`"
-                                                        title="View Activity" class="bt-outline-primary"
-                                                        style="font-size: 20px; color:#fff;">
-                                                        <span class="bi bi-eye"></span>
-                                                    </router-link>
-                                                </div>
-                                                <div class="col-md-8"></div>
-                                                <div class="col-md-2"
-                                                    :style="{ background: activity.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
-                                                    @click="activity.is_wishlist === 1 ? removeWishlist(activity) : toggleWishlist(activity)">
-                                                    <span class="bi bi-heart"
-                                                        style="font-size: 20px; color:#fff; cursor:pointer;"></span>
-                                                </div>
+                                            <div class="col-md-8"></div>
+                                            <div class="col-md-2"
+                                                :style="{ background: activity.is_wishlist === 1 ? 'red' : '#008cad', borderRadius: '20px', textAlign: 'center' }"
+                                                @click="activity.is_wishlist === 1 ? removeWishlist(activity) : toggleWishlist(activity)">
+                                                <span class="bi bi-heart"
+                                                    style="font-size: 20px; color:#fff; cursor:pointer;"></span>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                 <!-- </router-link> -->
                             </div>
                         </div>
