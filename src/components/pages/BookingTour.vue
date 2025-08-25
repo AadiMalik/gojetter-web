@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { loadStripe } from '@stripe/stripe-js'
 import api from '@/api'
 import { useRoute, useRouter } from 'vue-router'
@@ -21,13 +21,14 @@ let cardElement = null
 // Form refs
 const cardName = ref("")
 const loading = ref(false)
+const tour = ref(null)
 const couponCode = ref("")
 const appliedCoupon = ref(null)
 const applyingCoupon = ref(false)
+const travelers = ref([])
 const termsAgreed = ref(false)
-const placingOrder = ref(false)
+const placingBooking = ref(false)
 
-import { storeToRefs } from 'pinia'
 const dates = ref(route.query.dates || '')
 const tour_id = ref(route.query.tour_id || '')
 const tour_date_id = ref(route.query.tour_date_id || '')
@@ -77,20 +78,35 @@ const totalAmount = computed(() => subtotal.value - discountAmount.value)
 
 // Validation computed property
 const isFormValid = computed(() => {
-    return personalInfo.value.first_name &&
+    const personalValid = personalInfo.value.first_name &&
         personalInfo.value.last_name &&
         personalInfo.value.email &&
-        personalInfo.value.phone &&
-        addressInfo.value.country &&
+        personalInfo.value.phone
+
+    const addressValid = addressInfo.value.country &&
         addressInfo.value.zipcode &&
-        addressInfo.value.address &&
-        (paymentMethod.value === 'saved' ? selectedCardId.value : true) &&
+        addressInfo.value.address
+
+    const paymentValid = paymentMethod.value === 'saved' ? selectedCardId.value : true
+
+    const travelersValid = travelers.value.length > 0 &&
+        travelers.value.every(t =>
+            t.first_name.trim() !== "" &&
+            t.last_name.trim() !== ""
+        )
+
+    return personalValid &&
+        addressValid &&
+        paymentValid &&
         termsAgreed.value &&
+        travelersValid && // 🔥 required for Laravel to pass
         totalAmount.value > 0
 })
 
+
 onMounted(async () => {
     await CustomerCard()
+    await fetchTour()
 
     // Initialize Stripe after component is mounted
     try {
@@ -136,6 +152,28 @@ onMounted(async () => {
         toast.error('Failed to load payment system. Please refresh the page.')
     }
 })
+async function fetchTour() {
+    if (!slug.value) {
+        router.push('/tours')
+        return
+    }
+
+    loading.value = true
+    try {
+        const res = await api.get(`/tour-by-slug/${slug.value}`)
+        if (res.data?.Success && res.data?.Data) {
+            tour.value = res.data.Data.detail
+            console.log(tour.value)
+        } else {
+            router.push('/tours')
+        }
+    } catch (error) {
+        console.error(error)
+        router.push('/tours')
+    } finally {
+        loading.value = false
+    }
+}
 
 async function handleAddCard() {
     loading.value = true
@@ -252,8 +290,20 @@ function removeCoupon() {
     toast.info('Coupon removed')
 }
 
+// travelers add
+watch(quantity, (newQty) => {
+    travelers.value = Array.from({ length: newQty }, (_, i) => ({
+        first_name: "",
+        last_name: "",
+        dob: "",
+        weight: "",
+        weight_unit: "KG",
+        type: "adult"
+    }))
+}, { immediate: true })
+
 // Complete order function
-async function completeOrder() {
+async function completeBooking() {
     if (!isFormValid.value) {
         toast.error('Please complete all required fields and agree to terms & conditions')
         return
@@ -264,11 +314,13 @@ async function completeOrder() {
         return
     }
 
-    placingOrder.value = true
+    placingBooking.value = true
 
     try {
         // Prepare order data according to API requirements
         const bookingData = {
+            tour_id: tour_id.value,
+            tour_date_id: tour_date_id.value,
             card_id: selectedCardId.value,
             currency_id: currency.selected.id,
             first_name: personalInfo.value.first_name,
@@ -278,9 +330,15 @@ async function completeOrder() {
             country: addressInfo.value.country,
             zipcode: addressInfo.value.zipcode,
             address: addressInfo.value.address,
+            quantity: quantity.value,
+            sub_total: subtotal.value * currency.selected.rate,
+            tax_percent: 0,
+            tax_amount: 0,
             discount: discountAmount.value * currency.selected.rate,
+            total: totalAmount.value * currency.selected.rate,
             payment_method: 'stripe',
-            coupon_id: appliedCoupon.value?.id || null
+            coupon_id: appliedCoupon.value?.id || null,
+            booking_details: travelers.value
         }
 
         // Send booking to backend
@@ -309,10 +367,10 @@ async function completeOrder() {
         } else if (error.response?.data?.Message) {
             toast.error(error.response.data.Message)
         } else {
-            toast.error('Failed to place order. Please try again.')
+            toast.error('Failed to place booking. Please try again.')
         }
     } finally {
-        placingOrder.value = false
+        placingBooking.value = false
     }
 }
 </script>
@@ -325,13 +383,13 @@ async function completeOrder() {
         <div class="page-title dark-background" data-aos="fade"
             style="background-image: url(/assets/img/travel/showcase-8.webp);">
             <div class="container position-relative">
-                <h1>Checkout</h1>
+                <h1>Booking</h1>
                 <p>Esse dolorum voluptatum ullam est sint nemo et est ipsa porro placeat quibusdam quia
                     assumenda numquam molestias.</p>
                 <nav class="breadcrumbs">
                     <ol>
                         <li><router-link to="/">Home</router-link></li>
-                        <li class="current">Checkout</li>
+                        <li class="current">Booking</li>
                     </ol>
                 </nav>
             </div>
@@ -532,105 +590,33 @@ async function completeOrder() {
 
                                     <!-- Step 4: Review -->
                                     <div class="form-step tab-pane fade" id="travel-booking-step-3" role="tabpanel">
-                                        <h4>Review Your Order</h4>
+                                        <h4>Add Travelers</h4>
 
                                         <div class="addon-options">
                                             <!-- Personal Information Review -->
-                                            <div class="addon-item mb-4">
-                                                <h5 class="mb-3">Personal Information</h5>
+                                            <div v-for="(traveler, index) in travelers" :key="index"
+                                                class="addon-item mb-4">
+                                                <h5 class="mb-3">Traveler {{ index + 1 }}</h5>
                                                 <hr>
                                                 <div class="row">
                                                     <div class="col-md-6 mb-2">
-                                                        <span>First Name: <b>{{
-                                                            personalInfo.first_name
-                                                            || 'Not provided'
-                                                                }}</b></span>
+                                                        <label>First Name<span class="text-danger">*</span></label>
+                                                        <input type="text" v-model="traveler.first_name"
+                                                            class="form-control" required>
                                                     </div>
                                                     <div class="col-md-6 mb-2">
-                                                        <span>Last Name: <b>{{
-                                                            personalInfo.last_name
-                                                            || 'Not provided'
-                                                                }}</b></span>
+                                                        <label>Last Name<span class="text-danger">*</span></label>
+                                                        <input type="text" v-model="traveler.last_name"
+                                                            class="form-control" required>
                                                     </div>
                                                     <div class="col-md-6 mb-2">
-                                                        <span>Email: <b>{{
-                                                            personalInfo.email ||
-                                                            'Not provided'
-                                                                }}</b></span>
+                                                        <label>Date of Birth</label>
+                                                        <input type="date" v-model="traveler.dob" class="form-control">
                                                     </div>
                                                     <div class="col-md-6 mb-2">
-                                                        <span>Phone: <b>{{
-                                                            personalInfo.phone ||
-                                                            'Not provided'
-                                                                }}</b></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Address Information Review -->
-                                            <div class="addon-item mb-4">
-                                                <h5 class="mb-3">Address Information</h5>
-                                                <hr>
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-2">
-                                                        <span>Country: <b>{{
-                                                            addressInfo.country ||
-                                                            'Not provided'
-                                                                }}</b></span>
-                                                    </div>
-                                                    <div class="col-md-6 mb-2">
-                                                        <span>Zipcode: <b>{{
-                                                            addressInfo.zipcode ||
-                                                            'Not provided'
-                                                                }}</b></span>
-                                                    </div>
-                                                    <div class="col-md-12 mb-2">
-                                                        <span>Address: <b>{{
-                                                            addressInfo.address ||
-                                                            'Not provided'
-                                                                }}</b></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Payment Information Review -->
-                                            <div class="addon-item mb-4">
-                                                <h5 class="mb-3">Payment Information</h5>
-                                                <hr>
-                                                <div class="row">
-                                                    <div class="col-md-12 mb-2">
-                                                        <span>Payment Method: <b>
-                                                                {{
-                                                                    paymentMethod === 'new'
-                                                                        ? 'New Card' :
-                                                                        'Saved Card'
-                                                                }}
-                                                            </b></span>
-                                                    </div>
-                                                    <div class="col-md-12 mb-2"
-                                                        v-if="paymentMethod === 'saved' && selectedCardId">
-                                                        <span>Selected Card:
-                                                            <b>
-                                                                <template v-if="cards.length > 0">
-                                                                    {{ cards.find(c =>
-                                                                        c.id ===
-                                                                        selectedCardId)?.card_brand
-                                                                    }}
-                                                                    ending in {{
-                                                                        cards.find(c =>
-                                                                            c.id ===
-                                                                            selectedCardId)?.card_last_four
-                                                                    }}
-                                                                </template>
-                                                                <template v-else>No card
-                                                                    selected</template>
-                                                            </b>
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-md-12 mb-2"
-                                                        v-if="paymentMethod === 'new' && cardName">
-                                                        <span>Cardholder Name: <b>{{
-                                                            cardName }}</b></span>
+                                                        <label>Weight (KG)</label>
+                                                        <input type="number" v-model="traveler.weight"
+                                                            class="form-control">
                                                     </div>
                                                 </div>
                                             </div>
@@ -651,10 +637,10 @@ async function completeOrder() {
 
                                             <!-- Complete Order Button -->
                                             <div class="form-navigation">
-                                                <button type="button" @click="completeOrder" class="btn btn-book"
-                                                    :disabled="!isFormValid || placingOrder">
-                                                    {{ placingOrder ? 'Processing...' :
-                                                        'Complete Order' }}
+                                                <button type="button" @click="completeBooking" class="btn btn-book"
+                                                    :disabled="!isFormValid || placingBooking">
+                                                    {{ placingBooking ? 'Processing...' :
+                                                        'Complete Booking' }}
                                                 </button>
                                             </div>
                                         </div>
@@ -674,11 +660,12 @@ async function completeOrder() {
                                 <h4>Booking Summary</h4>
                             </div>
                             <div class="selected-tour">
-                                <img src="/assets/img/travel/tour-15.webp" alt="Selected Tour" class="img-fluid">
+                                <img :src="(tour?.thumbnail_url) ? tour?.thumbnail_url : '/assets/img/travel/tour-15.webp'"
+                                    alt="Selected Tour" class="img-fluid">
                                 <div class="tour-info">
-                                    <h5>Amazing Bali Adventure</h5>
-                                    <p><i class="bi bi-calendar"></i> 7 Days / 6 Nights</p>
-                                    <p><i class="bi bi-geo-alt"></i> Bali, Indonesia</p>
+                                    <h5>{{ tour?.title }}</h5>
+                                    <p><i class="bi bi-calendar"></i> {{ tour?.duration }}</p>
+                                    <p><i class="bi bi-geo-alt"></i> {{ tour?.destination.name }}</p>
                                 </div>
                             </div>
 
@@ -690,6 +677,10 @@ async function completeOrder() {
                                 <div class="detail-item">
                                     <span class="label">Travelers:</span>
                                     <span class="value">{{ quantity }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Price:</span>
+                                    <span class="value">{{ currency.format(price) }}</span>
                                 </div>
                             </div>
 
@@ -711,8 +702,8 @@ async function completeOrder() {
                                             ({{ currency.format(appliedCoupon.value) }} off)
                                         </span>
                                     </span>
-                                    <span class="amount text-danger">- {{ currency.format(discountAmount.value)
-                                        }}</span>
+                                    <span class="amount text-danger">- {{ currency.format(discountAmount)
+                                    }}</span>
                                 </div>
 
                                 <div class="price-total">
@@ -728,7 +719,7 @@ async function completeOrder() {
                                     <span class="badge bg-success rounded-pill mb-2" v-if="appliedCoupon"
                                         style="padding:8px; display: inline-flex; align-items: center;">
                                         <span style="margin-right:10px;">{{ appliedCoupon.code
-                                            }}</span>
+                                        }}</span>
                                         <a href="#" class="text-white" title="Remove Coupon"
                                             @click.prevent="removeCoupon">
                                             <i class="bi bi-trash"></i>

@@ -4,7 +4,7 @@ import api from "@/api"
 export const useCurrencyStore = defineStore("currency", {
       state: () => ({
             currencies: [],
-            selected: { code: "USD", symbol: "$", rate: 1 }, // default
+            selected: { id:1, code: "USD", symbol: "$", rate: 1 }, // default
       }),
       actions: {
             async fetchCurrencies() {
@@ -16,6 +16,7 @@ export const useCurrencyStore = defineStore("currency", {
                         const def = this.currencies.find(c => c.is_default === 1)
                         if (def) {
                               this.selected = {
+                                    id: def.id,
                                     code: def.code,
                                     symbol: def.symbol,
                                     rate: parseFloat(def.rate),

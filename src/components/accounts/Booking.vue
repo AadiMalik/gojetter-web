@@ -81,7 +81,7 @@ function showBookingDetails(booking) {
                             <td class="fw-semibold">{{ index + 1 }}</td>
                             <td>{{ booking.first_name }} {{ booking.last_name }}</td>
                             <td>{{ formatDate(booking.booking_date) }}</td>
-                            <td class="fw-semibold">{{ booking.currency.symbol }} {{ booking.total }}</td>
+                            <td class="fw-semibold">{{ booking?.currency.symbol }} {{ booking.total }}</td>
                             <td>
                                 <span class="text-capitalize">{{ booking.payment_method.replace('_', ' ') }}</span>
                             </td>
@@ -139,11 +139,7 @@ function showBookingDetails(booking) {
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="order-detail-item">
-                                        <div class="detail-label">Payment Method</div>
-                                        <div class="text-capitalize">{{ selectedBooking.payment_method.replace('_', ' ')
-                                            }}</div>
-                                    </div>
+                                    
                                 </div>
                                 <div class="col-md-6">
                                     <div class="order-detail-item">
@@ -158,6 +154,11 @@ function showBookingDetails(booking) {
                                         <div class="detail-label">Total</div>
                                         <div class="fw-semibold">{{ selectedBooking.currency.symbol }} {{
                                             selectedBooking.total }}</div>
+                                    </div>
+                                    <div class="order-detail-item">
+                                        <div class="detail-label">Payment Method</div>
+                                        <div class="text-capitalize">{{ selectedBooking.payment_method.replace('_', ' ')
+                                            }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -211,9 +212,9 @@ function showBookingDetails(booking) {
                                         <tr v-for="(item, index) in selectedBooking.booking_detail" :key="index">
                                             <td>{{ item.first_name }} {{ item.last_name }}</td>
                                             <td>{{ item.type }}</td>
-                                            <td>{{ item.dob }}</td>
+                                            <td>{{ item.dob?item.dob:'N/A' }}</td>
                                             <td>{{ item.weight_unit }}</td>
-                                            <td>{{ item.weight }}</td>
+                                            <td>{{ item.weight?item.weight:'N/A' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>

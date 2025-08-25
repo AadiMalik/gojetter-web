@@ -72,7 +72,7 @@ const bookNow = () => {
                   quantity: selectedDate.value.price_type === 'per_person' ? quantity.value : 1,
                   price: finalPrice,
                   dates: dates,
-                  slug: tour.slug
+                  slug: tour.value?.slug
             }
       })
 }
