@@ -18,7 +18,8 @@ const loading = ref(true)
 const tour = ref(null)
 const related_tours = ref([])
 const selectedDateId = ref(null)
-const adults = ref(1)
+const quantity = ref(1)
+const price = ref(1)
 
 // Active FAQ index
 const activeFaq = ref(null)
@@ -59,13 +60,19 @@ const bookNow = () => {
             toast.error(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
             return
       }
-
+      const finalPrice = selectedDate.value.discount_price && selectedDate.value.discount_price > 0
+            ? selectedDate.value.discount_price
+            : selectedDate.value.price
+      const dates = `${formatDate(selectedDate.value.start_date)} - ${formatDate(selectedDate.value.end_date)}`
       router.push({
             path: '/checkout-tour',
             query: {
-                  date_id: selectedDate.value.id,
+                  tour_date_id: selectedDate.value.id,
                   tour_id: selectedDate.value.tour_id,
-                  adults: selectedDate.value.price_type === 'per_person' ? adults.value : 1
+                  quantity: selectedDate.value.price_type === 'per_person' ? quantity.value : 1,
+                  price: finalPrice,
+                  dates: dates,
+                  slug: tour.slug
             }
       })
 }
@@ -296,7 +303,7 @@ const postReview = async () => {
                                                             date.discount_price > 0
                                                             ? date.discount_price
                                                             : date.price))
-                                                      }}</b>
+                                                            }}</b>
                                                       {{ date.price_type === 'per_person' ? 'per person' : 'Group'
                                                       }}
 
@@ -308,7 +315,7 @@ const postReview = async () => {
                                                 <div v-if="selectedDate && selectedDate.price_type === 'per_person'"
                                                       class="mt-3">
                                                       <label>Number of Adults:</label>
-                                                      <input type="number" min="1" v-model.number="adults"
+                                                      <input type="number" min="1" v-model.number="quantity"
                                                             class="form-control" />
                                                 </div>
 
@@ -530,7 +537,7 @@ const postReview = async () => {
                                                       <!-- Right side (name + time + comment) -->
                                                       <div class="flex items-center gap-2" style="float: left;">
                                                             <strong style="margin-left:7px;">{{ rev.user?.name
-                                                            }}</strong><br>
+                                                                  }}</strong><br>
                                                             <small class="text-muted block" style="margin-left:7px;">{{
                                                                   formatTime(rev.created_at) }}</small>
                                                       </div> <br><br><br>
@@ -583,11 +590,13 @@ const postReview = async () => {
                                                                                           }}</span>
                                                                               </template>
                                                                               <template v-else>
-                                                                                    {{ currency.format(tour.tour_date[0].price) }}
+                                                                                    {{
+                                                                                          currency.format(tour.tour_date[0].price)
+                                                                                    }}
                                                                               </template>
                                                                         </template>
                                                                         <template v-else>
-                                                                              {{currency.format(0)}}
+                                                                              {{ currency.format(0) }}
                                                                         </template>
                                                                   </div>
                                                             </div>

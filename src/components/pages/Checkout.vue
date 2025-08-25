@@ -186,6 +186,14 @@ async function CustomerCard() {
                         Authorization: `Bearer ${auth.token}`
                   }
             })
+            if (res.data?.Status === 401) {
+                  // logout logic
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  toast.error('Session expired, please login again');
+                  router.push('/login'); // redirect to login
+                  return;
+            }
             if (res.data?.Success) {
                   cards.value = res.data.Data || []
                   if (cards.value.length > 0 && !selectedCardId.value) {
@@ -227,7 +235,14 @@ async function applyCoupon() {
             const res = await api.post('/apply-coupon', {
                   code: couponCode.value.trim()
             })
-
+            if (res.data?.Status === 401) {
+                  // logout logic
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  toast.error('Session expired, please login again');
+                  router.push('/login'); // redirect to login
+                  return;
+            }
             if (res.data?.Success) {
                   appliedCoupon.value = res.data.Data
                   toast.success(`Coupon applied successfully: ${appliedCoupon.value.code}`)
@@ -271,7 +286,7 @@ async function completeOrder() {
             // Prepare order data according to API requirements
             const orderData = {
                   card_id: selectedCardId.value,
-                  currency_id: currency.selected.id, 
+                  currency_id: currency.selected.id,
                   first_name: personalInfo.value.first_name,
                   last_name: personalInfo.value.last_name,
                   email: personalInfo.value.email,
@@ -727,8 +742,10 @@ async function completeOrder() {
                                                                   {{ cart.activity.title }} <br>
                                                                   <small>Price: {{ (cart?.activity_date?.discount_price
                                                                         && cart?.activity_date?.discount_price > 0)
-                                                                        ? currency.format(cart?.activity_date?.discount_price)
-                                                                        : currency.format(cart?.activity_date?.price) }}</small>
+                                                                        ?
+                                                                        currency.format(cart?.activity_date?.discount_price)
+                                                                        : currency.format(cart?.activity_date?.price)
+                                                                        }}</small>
                                                             </td>
                                                             <td style="text-align: right;">
                                                                   {{ cart?.quantity }}
@@ -740,7 +757,8 @@ async function completeOrder() {
                                           <div class="price-breakdown">
                                                 <div class="price-item">
                                                       <span class="description">Subtotal</span>
-                                                      <span class="amount">{{ currency.format(cartStore.cartTotal) }}</span>
+                                                      <span class="amount">{{ currency.format(cartStore.cartTotal)
+                                                            }}</span>
                                                 </div>
 
                                                 <!-- Discount row -->
@@ -754,7 +772,8 @@ async function completeOrder() {
                                                                   ({{ currency.format(appliedCoupon.value) }} off)
                                                             </span>
                                                       </span>
-                                                      <span class="amount text-danger">- {{ currency.format(discountAmount) }}</span>
+                                                      <span class="amount text-danger">- {{
+                                                            currency.format(discountAmount) }}</span>
                                                 </div>
 
                                                 <div class="price-total">

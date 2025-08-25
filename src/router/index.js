@@ -33,6 +33,7 @@ import Cart from '@/components/pages/Cart.vue';
 import Checkout from '@/components/pages/Checkout.vue';
 import ServiceDetail from '@/components/pages/ServiceDetail.vue';
 import SubServiceDetail from '@/components/pages/SubServiceDetail.vue';
+import BookingTour from '@/components/pages/BookingTour.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -54,6 +55,7 @@ const routes = [
   { path: '/contact', component: Contact },
   { path: '/cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
+  { path: '/checkout-tour', component: BookingTour, meta: { requiresAuth: true } },
 
   
   { path: '/blog-detail/:slug', name:'blog-detail', component: BlogDetail },

@@ -17,6 +17,13 @@ export const useCartStore = defineStore('cart', () => {
                               Authorization: `Bearer ${localStorage.getItem('token')}`
                         }
                   })
+                  if (res.data?.Status === 401) {
+                        // logout logic
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        router.push('/login'); // redirect to login
+                        return;
+                  }
                   if (res.data?.Success) {
                         carts.value = res.data.Data || []
                   }
@@ -41,7 +48,13 @@ export const useCartStore = defineStore('cart', () => {
                               }
                         }
                   )
-
+                  if (res.data?.Status === 401) {
+                        // logout logic
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        router.push('/login'); // redirect to login
+                        return;
+                  }
                   if (res.data?.Success) {
                         carts.value = carts.value.filter(c => c.id !== cartId)
                   }

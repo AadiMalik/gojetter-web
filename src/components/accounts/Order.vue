@@ -20,7 +20,14 @@ async function fetchData() {
         Authorization: `Bearer ${localStorage.getItem('token')}` // ✅ auth token
       }
     });
-
+    if (resOrder.data?.Status === 401) {
+      // logout logic
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.error('Session expired, please login again');
+      router.push('/login'); // redirect to login
+      return;
+    }
     if (resOrder.data?.Success) {
       orders.value = resOrder.data.Data || [];
     }
@@ -53,7 +60,7 @@ function showOrderDetails(order) {
   <!-- Orders Table -->
   <div class="card">
     <div class="card-header">
-          Orders
+      Orders
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -70,8 +77,8 @@ function showOrderDetails(order) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(order,index) in orders" :key="order.id">
-              <td class="fw-semibold">{{ index+1 }}</td>
+            <tr v-for="(order, index) in orders" :key="order.id">
+              <td class="fw-semibold">{{ index + 1 }}</td>
               <td>{{ order.first_name }} {{ order.last_name }}</td>
               <td>{{ formatDate(order.order_date) }}</td>
               <td class="fw-semibold">{{ order.currency.symbol }} {{ order.total }}</td>
