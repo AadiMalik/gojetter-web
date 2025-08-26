@@ -1,3 +1,37 @@
+<script setup>
+import { onMounted, ref } from 'vue';
+import api from '@/api';
+import { useCurrencyStore } from "@/store/currency";
+
+const currency = useCurrencyStore();
+
+const activities = ref([]);
+const tours = ref([]);
+const testimonials = ref([]);
+const loading = ref(true);
+
+onMounted(async () => {
+    await fetchData();
+});
+async function fetchData() {
+    try {
+        const res = await api.get('/web');
+
+        if (res.data?.Success) {
+            activities.value = res.data.Data.activities || [];
+            tours.value = res.data.Data.tours || [];
+            testimonials.value = res.data.Data.testimonials || [];
+        }
+
+    } catch (err) {
+        console.error('Fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
+
+</script>
+
 <template>
     <main class="main">
 
@@ -245,141 +279,101 @@
         <!-- /Why Us Section -->
 
         <!-- Featured Destinations Section -->
-        <section id="featured-destinations" class="featured-destinations section">
+        <section id="featured-destinations" class="featured-destinations section" v-if="activities.length>2">
 
             <!-- Section Title -->
             <div class="container section-title" data-aos="fade-up">
-                <h2>Featured Destinations</h2>
-                <div><span>Check Our</span> <span class="description-title">Featured Destinations</span></div>
+                <h2>Featured Activities</h2>
+                <div><span>Check Our</span> <span class="description-title">Featured Activities</span></div>
             </div><!-- End Section Title -->
 
             <div class="container" data-aos="fade-up" data-aos-delay="100">
 
                 <div class="row">
-
-                    <div class="col-lg-6" data-aos="zoom-in" data-aos-delay="200">
+                    <!-- First Activity (Big Column) -->
+                    <div class="col-lg-6" v-if="activities.length > 0" data-aos="zoom-in" data-aos-delay="200">
                         <div class="featured-destination">
                             <div class="destination-overlay">
-                                <img src="/assets/img/travel/destination-3.webp" alt="Tropical Paradise"
-                                    class="img-fluid">
+                                <img :src="activities[0].thumbnail_url" :alt="activities[0].title" class="img-fluid">
                                 <div class="destination-info">
-                                    <span class="destination-tag">Popular Choice</span>
-                                    <h3>Tropical Paradise</h3>
-                                    <p class="location"><i class="bi bi-geo-alt-fill"></i> Maldives</p>
-                                    <p class="description">Pristine beaches, crystal-clear waters, and luxury overwater
-                                        villas await in
-                                        this tropical paradise destination.</p>
+                                    <span
+                                        v-for="(tag, idx) in (activities[0].tags ? activities[0].tags.split(',') : [])"
+                                        :key="idx" class="destination-tag me-2">
+                                        {{ tag.trim() }}
+                                    </span>
+                                    <h3 class="one-line">{{ activities[0]?.title }}</h3>
+                                    <p class="location"><i class="bi bi-geo-alt-fill"></i> {{
+                                        activities[0]?.destination?.name }}
+                                    </p>
+                                    <p class="description one-line">{{ activities[0]?.short_description }}</p>
                                     <div class="destination-meta">
                                         <div class="tours-count">
                                             <i class="bi bi-collection"></i>
-                                            <span>22 Packages</span>
+                                            <span>{{ activities[0]?.activity_date.length }}</span>
                                         </div>
                                         <div class="rating">
                                             <i class="bi bi-star-fill"></i>
-                                            <span>4.9 (412)</span>
+                                            <span>{{ activities[0]?.average_rating }} ({{
+                                                activities[0]?.activity_reviews.length }})</span>
                                         </div>
                                     </div>
                                     <div class="price-info">
                                         <span class="starting-from">Starting from</span>
-                                        <span class="amount">$2,150</span>
+                                        <span class="amount">{{ currency.format(activities[0]?.activity_date[0].price)
+                                            }}</span>
                                     </div>
-                                    <a href="destination-details.html" class="explore-btn">
+                                    <router-link :to="`/activity-detail/${activities[0]?.slug}`" class="explore-btn">
                                         <span>Explore Now</span>
                                         <i class="bi bi-arrow-right"></i>
-                                    </a>
+                                    </router-link>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Next Three Activities -->
                     <div class="col-lg-6">
                         <div class="row g-3">
-
-                            <div class="col-12" data-aos="fade-left" data-aos-delay="300">
+                            <div class="col-12" v-for="(activity, index) in activities.slice(1, 4)" :key="index"
+                                :data-aos="'fade-left'" :data-aos-delay="300 + (index * 100)">
                                 <div class="compact-destination">
                                     <div class="destination-image">
-                                        <img src="/assets/img/travel/destination-7.webp" alt="Mountain Adventure"
-                                            class="img-fluid">
-                                        <div class="badge-offer">Best Value</div>
+                                        <img :src="activity?.thumbnail_url" :alt="activity?.title" class="img-fluid">
+                                        <div v-for="(tag, idx) in (activity?.tags ? activity?.tags.split(',') : [])"
+                                            :key="idx" class="badge-offer">
+                                            {{ tag.trim() }}
+                                        </div>
                                     </div>
                                     <div class="destination-details">
-                                        <h4>Mountain Adventure</h4>
-                                        <p class="location"><i class="bi bi-geo-alt"></i> Nepal</p>
-                                        <p class="brief">Breathtaking Himalayan peaks and ancient Buddhist temples
-                                            create an unforgettable
-                                            spiritual journey.</p>
+                                        <h4 class="one-line">{{ activity?.title }}</h4>
+                                        <p class="location"><i class="bi bi-geo-alt"></i> {{ activity?.destination?.name
+                                            }}</p>
+                                        <p class="brief one-line">{{ activity?.short_description }}</p>
                                         <div class="stats-row">
-                                            <span class="tour-count"><i class="bi bi-calendar-check"></i> 16
-                                                Tours</span>
-                                            <span class="rating"><i class="bi bi-star-fill"></i> 4.8</span>
-                                            <span class="price">from $1,420</span>
+                                            <span class="tour-count"><i class="bi bi-calendar-check"></i> {{
+                                                activity?.activity_date.length }}</span>
+                                            <span class="rating"><i class="bi bi-star-fill"></i> {{
+                                                activity?.average_rating
+                                                }}</span>
+                                            <span class="price">from {{
+                                                currency.format(activity?.activity_date[0].price) }}</span>
                                         </div>
-                                        <a href="destination-details.html" class="quick-link">View Details <i
-                                                class="bi bi-chevron-right"></i></a>
+                                        <router-link :to="`/activity-detail/${activity?.slug}`" class="quick-link">View
+                                            Details <i class="bi bi-chevron-right"></i></router-link>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-12" data-aos="fade-left" data-aos-delay="400">
-                                <div class="compact-destination">
-                                    <div class="destination-image">
-                                        <img src="/assets/img/travel/destination-11.webp" alt="Cultural Heritage"
-                                            class="img-fluid">
-                                    </div>
-                                    <div class="destination-details">
-                                        <h4>Cultural Heritage</h4>
-                                        <p class="location"><i class="bi bi-geo-alt"></i> Peru</p>
-                                        <p class="brief">Discover ancient civilizations, colorful markets, and
-                                            archaeological wonders in the
-                                            heart of South America.</p>
-                                        <div class="stats-row">
-                                            <span class="tour-count"><i class="bi bi-calendar-check"></i> 9
-                                                Expeditions</span>
-                                            <span class="rating"><i class="bi bi-star-fill"></i> 4.7</span>
-                                            <span class="price">from $980</span>
-                                        </div>
-                                        <a href="destination-details.html" class="quick-link">View Details <i
-                                                class="bi bi-chevron-right"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12" data-aos="fade-left" data-aos-delay="500">
-                                <div class="compact-destination">
-                                    <div class="destination-image">
-                                        <img src="/assets/img/travel/destination-16.webp" alt="Safari Experience"
-                                            class="img-fluid">
-                                        <div class="badge-offer limited">Limited Spots</div>
-                                    </div>
-                                    <div class="destination-details">
-                                        <h4>Safari Experience</h4>
-                                        <p class="location"><i class="bi bi-geo-alt"></i> Kenya</p>
-                                        <p class="brief">Witness the Big Five and experience the great migration in
-                                            Africa's most
-                                            spectacular wildlife reserves.</p>
-                                        <div class="stats-row">
-                                            <span class="tour-count"><i class="bi bi-calendar-check"></i> 11
-                                                Safaris</span>
-                                            <span class="rating"><i class="bi bi-star-fill"></i> 4.9</span>
-                                            <span class="price">from $2,750</span>
-                                        </div>
-                                        <a href="destination-details.html" class="quick-link">View Details <i
-                                                class="bi bi-chevron-right"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
-
                 </div>
+
 
             </div>
 
         </section><!-- /Featured Destinations Section -->
 
         <!-- Featured Tours Section -->
-        <section id="featured-tours" class="featured-tours section">
+        <section id="featured-tours" class="featured-tours section" v-if="tours.length">
 
             <!-- Section Title -->
             <div class="container section-title" data-aos="fade-up">
@@ -390,222 +384,39 @@
             <div class="container" data-aos="fade-up" data-aos-delay="100">
 
                 <div class="row gy-4">
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200" v-for="tour in tours">
                         <div class="tour-card">
                             <div class="tour-image">
-                                <img src="/assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge">Top Rated</div>
-                                <div class="tour-price">$2,150</div>
+                                <img :src="tour?.thumbnail_url" :alt="tour?.title" class="img-fluid" loading="lazy">
+                                <div class="tour-badge" v-for="(tag, idx) in (tour?.tags ? tour?.tags.split(',') : [])"
+                                    :key="idx">{{ tag.trim() }}</div>
+                                <div class="tour-price">{{ currency.format(tour?.tour_date[0]?.price) }}</div>
                             </div>
                             <div class="tour-content">
-                                <h4>Serene Beach Retreat</h4>
+                                <h4 class="one-line">{{ tour?.title }}</h4>
                                 <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 8 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 6</span>
+                                    <span class="duration"><i class="bi bi-clock"></i> {{ tour?.duration }}</span>
+                                    <span class="group-size"><i class="bi bi-people"></i> Max {{ tour?.group_size
+                                        }}</span>
                                 </div>
-                                <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non
-                                    sapien vel enim
-                                    cursus semper.</p>
+                                <p class="one-line" v-html="tour?.short_description"></p>
                                 <div class="tour-highlights">
-                                    <span>Maldives</span>
-                                    <span>Seychelles</span>
-                                    <span>Bora Bora</span>
+                                    <span v-for="(tag, index) in tour?.tags.split(',')"
+                                                                  :key="index">
+                                                                  {{ tag.trim() }}
+                                                            </span>
                                 </div>
                                 <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
-                                    <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-half"></i>
-                                        <span>4.8 (95)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End Tour Item -->
+                                    <router-link :to="`/tour-detail/${tour.slug}`" class="btn-book">Book
+                                        Now</router-link>
 
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                        <div class="tour-card">
-                            <div class="tour-image">
-                                <img src="/assets/img/travel/tour-2.webp" alt="Arctic Expedition" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge limited">Only 3 Spots!</div>
-                                <div class="tour-price">$5,700</div>
-                            </div>
-                            <div class="tour-content">
-                                <h4>Arctic Wilderness Expedition</h4>
-                                <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 10 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 8</span>
-                                </div>
-                                <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia
-                                    Curae; Donec dictum
-                                    non massa nec fermentum.</p>
-                                <div class="tour-highlights">
-                                    <span>Greenland</span>
-                                    <span>Iceland</span>
-                                    <span>Norway</span>
-                                </div>
-                                <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
                                     <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star"></i>
-                                        <span>4.6 (55)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End Tour Item -->
-
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-                        <div class="tour-card">
-                            <div class="tour-image">
-                                <img src="/assets/img/travel/tour-4.webp" alt="Desert Safari" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge new">Newly Added</div>
-                                <div class="tour-price">$1,400</div>
-                            </div>
-                            <div class="tour-content">
-                                <h4>Sahara Desert Discovery</h4>
-                                <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 5 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 10</span>
-                                </div>
-                                <p>Pellentesque euismod tincidunt turpis ac tristique. Phasellus vitae lacus in enim
-                                    mollis facilisis
-                                    vel quis ex. In hac habitasse platea dictumst.</p>
-                                <div class="tour-highlights">
-                                    <span>Morocco</span>
-                                    <span>Egypt</span>
-                                    <span>Dubai</span>
-                                </div>
-                                <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
-                                    <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <span>4.9 (72)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End Tour Item -->
-
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                        <div class="tour-card">
-                            <div class="tour-image">
-                                <img src="/assets/img/travel/tour-5.webp" alt="Coastal Explorer" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge">Popular Choice</div>
-                                <div class="tour-price">$1,980</div>
-                            </div>
-                            <div class="tour-content">
-                                <h4>Mediterranean Coastal Cruise</h4>
-                                <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 9 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 15</span>
-                                </div>
-                                <p>Nullam lacinia justo eget ex sodales, vel finibus orci aliquet. Donec auctor, elit ut
-                                    molestie
-                                    gravida, magna mi molestie nisi.</p>
-                                <div class="tour-highlights">
-                                    <span>Greece</span>
-                                    <span>Croatia</span>
-                                    <span>Italy</span>
-                                </div>
-                                <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
-                                    <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-half"></i>
-                                        <span>4.7 (110)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End Tour Item -->
-
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                        <div class="tour-card">
-                            <div class="tour-image">
-                                <img src="/assets/img/travel/tour-6.webp" alt="Rainforest Trek" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge cultural">Eco-Friendly</div>
-                                <div class="tour-price">$2,650</div>
-                            </div>
-                            <div class="tour-content">
-                                <h4>Amazon Rainforest Trek</h4>
-                                <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 12 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 10</span>
-                                </div>
-                                <p>Quisque dictum felis eu tortor mollis, quis tincidunt arcu pharetra. A pellentesque
-                                    sit amet,
-                                    consectetur adipiscing elit.</p>
-                                <div class="tour-highlights">
-                                    <span>Brazil</span>
-                                    <span>Ecuador</span>
-                                    <span>Peru</span>
-                                </div>
-                                <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
-                                    <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star"></i>
-                                        <span>4.5 (88)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- End Tour Item -->
-
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-                        <div class="tour-card">
-                            <div class="tour-image">
-                                <img src="/assets/img/travel/tour-8.webp" alt="Patagonian Peaks" class="img-fluid"
-                                    loading="lazy">
-                                <div class="tour-badge adventure">Adventure Seekers</div>
-                                <div class="tour-price">$3,950</div>
-                            </div>
-                            <div class="tour-content">
-                                <h4>Patagonian Peaks &amp; Glaciers</h4>
-                                <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> 14 Days</span>
-                                    <span class="group-size"><i class="bi bi-people"></i> Max 10</span>
-                                </div>
-                                <p>Vivamus eget semper neque. Ut porttitor mi at odio egestas, non vestibulum est
-                                    malesuada. Nunc
-                                    facilisis in felis eget efficitur.</p>
-                                <div class="tour-highlights">
-                                    <span>Argentina</span>
-                                    <span>Chile</span>
-                                    <span>Ushuaia</span>
-                                </div>
-                                <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">Book Now</a>
-                                    <div class="tour-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <span>4.9 (60)</span>
+                                        <span v-for="n in 5" :key="n">
+                                            <i v-if="n <= Math.round(tour?.average_rating)"
+                                                class="bi bi-star-fill text-warning"></i>
+                                            <i v-else class="bi bi-star text-muted"></i>
+                                        </span>
+                                        <span>{{Number(tour?.average_rating).toFixed(2) }} ( {{ tour?.tour_reviews.length }} )</span>
                                     </div>
                                 </div>
                             </div>
@@ -615,7 +426,7 @@
                 </div>
 
                 <div class="text-center mt-5" data-aos="fade-up" data-aos-delay="500">
-                    <a href="tours.html" class="btn-view-all">View All Tours</a>
+                    <router-link :to="`/tours`" class="btn-view-all">View All Tours</router-link>
                 </div>
 
             </div>
@@ -623,7 +434,7 @@
         </section><!-- /Featured Tours Section -->
 
         <!-- Testimonials Home Section -->
-        <section id="testimonials-home" class="testimonials-home section">
+        <section id="testimonials-home" class="testimonials-home section" v-if="testimonials.length">
 
             <!-- Section Title -->
             <div class="container section-title" data-aos="fade-up">
@@ -636,83 +447,16 @@
                 <div class="swiper init-swiper">
                     <div class="swiper-wrapper">
 
-                        <div class="swiper-slide">
+                        <div class="swiper-slide" v-for="testimonial in testimonials">
                             <div class="testimonial-item">
                                 <p>
                                     <i class="bi bi-quote quote-icon-left"></i>
-                                    <span>Proin iaculis purus consequat sem cure digni ssim donec porttitora entum
-                                        suscipit rhoncus.
-                                        Accusantium quam, ultricies eget id, aliquam eget nibh et. Maecen aliquam, risus
-                                        at semper.</span>
+                                    <span v-html="testimonial?.message"></span>
                                     <i class="bi bi-quote quote-icon-right"></i>
                                 </p>
-                                <img src="/assets/img/person/person-m-9.webp" class="testimonial-img" alt="">
-                                <h3>Saul Goodman</h3>
-                                <h4>Ceo &amp; Founder</h4>
-                            </div>
-                        </div><!-- End testimonial item -->
-
-                        <div class="swiper-slide">
-                            <div class="testimonial-item">
-                                <p>
-                                    <i class="bi bi-quote quote-icon-left"></i>
-                                    <span>Export tempor illum tamen malis malis eram quae irure esse labore quem cillum
-                                        quid malis quorum
-                                        velit fore eram velit sunt aliqua noster fugiat irure amet legam anim
-                                        culpa.</span>
-                                    <i class="bi bi-quote quote-icon-right"></i>
-                                </p>
-                                <img src="/assets/img/person/person-f-5.webp" class="testimonial-img" alt="">
-                                <h3>Sara Wilsson</h3>
-                                <h4>Designer</h4>
-                            </div>
-                        </div><!-- End testimonial item -->
-
-                        <div class="swiper-slide">
-                            <div class="testimonial-item">
-                                <p>
-                                    <i class="bi bi-quote quote-icon-left"></i>
-                                    <span>Enim nisi quem export duis labore cillum quae magna enim sint quorum nulla
-                                        quem veniam duis
-                                        minim tempor labore quem eram duis noster aute amet eram fore quis sint
-                                        minim.</span>
-                                    <i class="bi bi-quote quote-icon-right"></i>
-                                </p>
-                                <img src="/assets/img/person/person-f-12.webp" class="testimonial-img" alt="">
-                                <h3>Jena Karlis</h3>
-                                <h4>Store Owner</h4>
-                            </div>
-                        </div><!-- End testimonial item -->
-
-                        <div class="swiper-slide">
-                            <div class="testimonial-item">
-                                <p>
-                                    <i class="bi bi-quote quote-icon-left"></i>
-                                    <span>Fugiat enim eram quae cillum dolore dolor amet nulla culpa multos export minim
-                                        fugiat dolor enim
-                                        duis veniam ipsum anim magna sunt elit fore quem dolore labore illum
-                                        veniam.</span>
-                                    <i class="bi bi-quote quote-icon-right"></i>
-                                </p>
-                                <img src="/assets/img/person/person-m-12.webp" class="testimonial-img" alt="">
-                                <h3>Matt Brandon</h3>
-                                <h4>Freelancer</h4>
-                            </div>
-                        </div><!-- End testimonial item -->
-
-                        <div class="swiper-slide">
-                            <div class="testimonial-item">
-                                <p>
-                                    <i class="bi bi-quote quote-icon-left"></i>
-                                    <span>Quis quorum aliqua sint quem legam fore sunt eram irure aliqua veniam tempor
-                                        noster veniam sunt
-                                        culpa nulla illum cillum fugiat legam esse veniam culpa fore nisi cillum
-                                        quid.</span>
-                                    <i class="bi bi-quote quote-icon-right"></i>
-                                </p>
-                                <img src="/assets/img/person/person-m-13.webp" class="testimonial-img" alt="">
-                                <h3>John Larson</h3>
-                                <h4>Entrepreneur</h4>
+                                <img :src="testimonial.image_url ? testimonial.image_url : '/assets/img/person/demoUser.png'" class="testimonial-img" alt="">
+                                <h3>{{testimonial?.name}}</h3>
+                                <h4>{{testimonial?.profession}}</h4>
                             </div>
                         </div><!-- End testimonial item -->
 
@@ -741,14 +485,14 @@
 
                         <div class="action-section">
                             <div class="main-actions">
-                                <a href="destinations.html" class="btn btn-explore">
+                                <router-link :to="`/tours`" class="btn btn-explore">
                                     <i class="bi bi-compass"></i>
                                     Explore Now
-                                </a>
-                                <a href="deals.html" class="btn btn-deals">
+                                </router-link>
+                                <router-link :to="`/destinations`" class="btn btn-deals">
                                     <i class="bi bi-percent"></i>
                                     View Deals
-                                </a>
+                                </router-link>
                             </div>
 
                             <div class="quick-contact">
@@ -864,3 +608,14 @@
 
     </main>
 </template>
+<style>
+.one-line {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    /* show only 1 line */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+</style>
