@@ -114,10 +114,21 @@
    */
   function initSwiper() {
     document.querySelectorAll(".init-swiper").forEach(function(swiperElement) {
-      let config = JSON.parse(
-        swiperElement.querySelector(".swiper-config").innerHTML.trim()
-      );
-
+      // Default config
+      const config = {
+        loop: true,
+        slidesPerView: 1,
+        spaceBetween: 20,
+        pagination: {
+          el: swiperElement.querySelector(".swiper-pagination"),
+          clickable: true,
+        },
+        autoplay: {
+          delay: 5000,
+          disableOnInteraction: false,
+        },
+      };
+  
       if (swiperElement.classList.contains("swiper-tab")) {
         initSwiperWithCustomPagination(swiperElement, config);
       } else {
@@ -125,8 +136,9 @@
       }
     });
   }
-
+  
   window.addEventListener("load", initSwiper);
+  
 
   /**
    * Initiate glightbox
