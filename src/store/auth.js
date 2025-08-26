@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
                 localStorage.setItem('user', JSON.stringify(userData));
                 return { otpRequired: false };
                 // Redirect to account page
-                
+
             } else {
                 if (res.data?.Message?.includes('Email not verified. OTP has been sent to your email.')) {
                     return {
@@ -40,6 +40,24 @@ export const useAuthStore = defineStore('auth', () => {
             throw err; // will be caught in component
         }
     }
+    async function fetchUser() {
+        if (!token.value) return;
+
+        try {
+            const res = await api.get('/me', {  // or your profile endpoint
+                headers: {
+                    Authorization: `Bearer ${token.value}`
+                }
+            });
+            if (res.data?.Success) {
+                user.value = res.data.Data;
+                localStorage.setItem('user', JSON.stringify(user.value));
+            }
+        } catch (err) {
+            console.error('Failed to fetch user', err);
+            logout(); // optional: logout if token invalid
+        }
+    }
 
 
     function logout() {
@@ -49,5 +67,5 @@ export const useAuthStore = defineStore('auth', () => {
         router.push('/');
     }
 
-    return { token, user, login, logout };
+    return { token, user, login, logout,fetchUser };
 });

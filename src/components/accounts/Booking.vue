@@ -77,6 +77,9 @@ function showBookingDetails(booking) {
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="bookings.length === 0">
+                            <td colspan="7" class="text-center">No booking data found</td>
+                        </tr>
                         <tr v-for="(booking, index) in bookings" :key="booking.id">
                             <td class="fw-semibold">{{ index + 1 }}</td>
                             <td>{{ booking.first_name }} {{ booking.last_name }}</td>
@@ -139,7 +142,7 @@ function showBookingDetails(booking) {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                 </div>
                                 <div class="col-md-6">
                                     <div class="order-detail-item">
@@ -212,9 +215,9 @@ function showBookingDetails(booking) {
                                         <tr v-for="(item, index) in selectedBooking.booking_detail" :key="index">
                                             <td>{{ item.first_name }} {{ item.last_name }}</td>
                                             <td>{{ item.type }}</td>
-                                            <td>{{ item.dob?item.dob:'N/A' }}</td>
+                                            <td>{{ item.dob ? item.dob : 'N/A' }}</td>
                                             <td>{{ item.weight_unit }}</td>
-                                            <td>{{ item.weight?item.weight:'N/A' }}</td>
+                                            <td>{{ item.weight ? item.weight : 'N/A' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>

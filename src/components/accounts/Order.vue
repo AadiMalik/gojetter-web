@@ -77,6 +77,9 @@ function showOrderDetails(order) {
             </tr>
           </thead>
           <tbody>
+            <tr v-if="orders.length === 0">
+              <td colspan="7" class="text-center">No order data found</td>
+            </tr>
             <tr v-for="(order, index) in orders" :key="order.id">
               <td class="fw-semibold">{{ index + 1 }}</td>
               <td>{{ order.first_name }} {{ order.last_name }}</td>
