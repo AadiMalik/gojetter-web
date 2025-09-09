@@ -187,12 +187,10 @@ async function fetchToursAndActivity() {
                                                         tour?.duration
                                                         }}</span>
                                                     <span class="starting-price">
-                                                        {{ Array.isArray(tour?.tour_date) && tour.tour_date.length > 0
-                                                            ? (tour.tour_date[0].discount_price &&
-                                                                tour.tour_date[0].discount_price > 0
-                                                                ? currency.format(tour.tour_date[0].discount_price)
-                                                                : currency.format(tour.tour_date[0].price))
-                                                            : currency.format(0)
+                                                        {{ (tour.discount_price &&
+                                                                tour.discount_price > 0
+                                                                ? currency.format(tour.discount_price)
+                                                                : currency.format(tour.price))
                                                         }}
                                                     </span>
                                                 </div>

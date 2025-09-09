@@ -10,16 +10,14 @@ import 'vue3-toastify/dist/index.css'
 import { useCurrencyStore } from "@/store/currency"
 
 const currency = useCurrencyStore()
-
 const route = useRoute()
 const router = useRouter()
 
 const loading = ref(true)
 const tour = ref(null)
 const related_tours = ref([])
-const selectedDateId = ref(null)
+const selectedDate = ref(null) // single date selection
 const quantity = ref(1)
-const price = ref(1)
 
 // Active FAQ index
 const activeFaq = ref(null)
@@ -27,51 +25,41 @@ const toggleFaq = (index) => {
       activeFaq.value = activeFaq.value === index ? null : index
 }
 
-const selectedDate = computed(() => {
-      return tour.value?.tour_date?.find(d => d.id === selectedDateId.value) || null
-})
-
+// Date formatting
 const formatDate = (dateStr) => {
       const options = { day: '2-digit', month: 'short', year: 'numeric' }
       return new Date(dateStr).toLocaleDateString('en-GB', options)
 }
-const formatTime = (dateStr) => {
-      return dayjs(dateStr).fromNow()
-}
+const formatTime = (dateStr) => dayjs(dateStr).fromNow()
 
-const isPastCutoff = (date) => {
-      const start = new Date(date.start_date)
-      const cutoffDate = new Date(start)
-      cutoffDate.setDate(start.getDate() - (date.cut_off_days || 0))
-
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      return today > cutoffDate
-}
-
+// Book now function
 const bookNow = () => {
       if (!selectedDate.value) {
             toast.error('Please select a date.')
             return
       }
 
-      if (isPastCutoff(selectedDate.value)) {
-            toast.error(`Booking closed. You must book at least ${selectedDate.value.cut_off_days} day(s) before the start date.`)
+      const selected = new Date(selectedDate.value)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const cutoffDate = new Date(today)
+      cutoffDate.setDate(today.getDate() + (tour.value?.cut_of_day || 0))
+
+      if (selected < cutoffDate) {
+            toast.error(`Booking closed. You must book at least ${tour.value?.cut_of_day || 0} day(s) in advance.`)
             return
       }
-      const finalPrice = selectedDate.value.discount_price && selectedDate.value.discount_price > 0
-            ? selectedDate.value.discount_price
-            : selectedDate.value.price
-      const dates = `${formatDate(selectedDate.value.start_date)} - ${formatDate(selectedDate.value.end_date)}`
+
+      const finalPrice = tour.value?.discount_price && tour.value.discount_price > 0
+            ? tour.value.discount_price
+            : tour.value?.price || 0
+
       router.push({
             path: '/checkout-tour',
             query: {
-                  tour_date_id: selectedDate.value.id,
-                  tour_id: selectedDate.value.tour_id,
-                  quantity: selectedDate.value.price_type === 'per_person' ? quantity.value : 1,
+                  tour_date: selectedDate.value,
+                  quantity: quantity.value,
                   price: finalPrice,
-                  dates: dates,
                   slug: tour.value?.slug
             }
       })
@@ -107,25 +95,28 @@ const fetchTour = async () => {
 
 onMounted(fetchTour)
 
-// 👀 Watch for route slug change
+const minSelectableDate = computed(() => {
+      if (!tour.value) return null
+      const cutOff = tour.value.cut_of_day || 0
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const minDate = new Date(today)
+      minDate.setDate(today.getDate() + cutOff)
+      return minDate.toISOString().split('T')[0] // YYYY-MM-DD
+})
+// Watch for route slug change
 watch(
       () => route.params.slug,
       () => {
             fetchTour()
-            window.scrollTo({
-                  top: 0,
-                  behavior: 'smooth' // smooth scrolling
-            })
+            window.scrollTo({ top: 0, behavior: 'smooth' })
       }
 )
 
 /* -------------------------
    ⭐ Reviews (inline refresh)
 -------------------------- */
-const form = ref({
-      rating: null,
-      comment: ""
-})
+const form = ref({ rating: null, comment: "" })
 
 const postReview = async () => {
       if (!form.value.rating) {
@@ -140,10 +131,7 @@ const postReview = async () => {
             })
 
             if (res.data?.Success && res.data?.Data) {
-                  // Push the new review into the same array
                   tour.value.tour_reviews.unshift(res.data.Data)
-
-                  // Reset form
                   form.value.rating = null
                   form.value.comment = ""
             } else {
@@ -152,15 +140,13 @@ const postReview = async () => {
       } catch (err) {
             console.error(err)
             if (err.response?.status === 401) {
-                  router.push({
-                        path: "/login",
-                        query: { redirect: route.fullPath }
-                  })
+                  router.push({ path: "/login", query: { redirect: route.fullPath } })
             }
             toast.error("Error while saving review")
       }
 }
 </script>
+
 
 <template>
       <main class="main">
@@ -239,14 +225,16 @@ const postReview = async () => {
                                           <p>{{ tour?.difficulty_level }}</p>
                                     </div>
                               </div>
-                              <!-- 
+
                               <div class="col-6 col-md-2">
                                     <div class="info-box">
-                                          <i class="bi bi-tags"></i>
-                                          <h6>Category</h6>
-                                          <p>{{ tour?.tour_category?.name }}</p>
+                                          <i class="bi bi-credit-card"></i>
+                                          <h6>Price</h6>
+                                          <p>{{ currency.format((tour?.discount_price > 0) ? tour?.discount_price :
+                                                tour?.price)
+                                                }}</p>
                                     </div>
-                              </div> -->
+                              </div>
                         </div>
                         <div class="tour-overview" data-aos="fade-up" data-aos-delay="600">
                               <div class="row">
@@ -283,38 +271,15 @@ const postReview = async () => {
                                     </div>
                                     <div class="col-lg-4">
                                           <div class="tour-highlights">
-                                                <h3>Available Dates</h3>
+                                                <h3>Select Date</h3>
 
-                                                <label v-for="date in tour?.tour_date" :key="date.id"
-                                                      class="p-2 mb-2 rounded w-100 d-block" :class="[
-                                                            isPastCutoff(date)
-                                                                  ? 'border border-danger bg-light text-muted'
-                                                                  : selectedDateId === date.id
-                                                                        ? 'border border-primary bg-primary text-white'
-                                                                        : 'border border-success'
-                                                      ]"
-                                                      :style="{ cursor: isPastCutoff(date) ? 'not-allowed' : 'pointer' }">
-                                                      <input type="radio" name="tour_date" :value="date.id"
-                                                            v-model="selectedDateId" :disabled="isPastCutoff(date)"
-                                                            class="d-none" />
-                                                      {{ formatDate(date.start_date) }} - {{
-                                                            formatDate(date.end_date) }} <br />
-                                                      <b>{{ currency.format((date.discount_price &&
-                                                            date.discount_price > 0
-                                                            ? date.discount_price
-                                                            : date.price))
-                                                            }}</b>
-                                                      {{ date.price_type === 'per_person' ? 'per person' : 'Group'
-                                                      }}
+                                                <div v-if="tour">
+                                                      <input type="date" class="form-control" :min="minSelectableDate"
+                                                            v-model="selectedDate" />
+                                                </div>
 
-                                                      <span v-if="isPastCutoff(date)" class="text-danger ms-2">(Booking
-                                                            closed)</span>
-                                                </label>
-
-                                                <!-- Adults input if per_person -->
-                                                <div v-if="selectedDate && selectedDate.price_type === 'per_person'"
-                                                      class="mt-3">
-                                                      <label>Number of Adults:</label>
+                                                <div v-if="selectedDate" class="mt-3">
+                                                      <label>Quantity:</label>
                                                       <input type="number" min="1" v-model.number="quantity"
                                                             class="form-control" />
                                                 </div>
@@ -324,8 +289,8 @@ const postReview = async () => {
                                                       Book Now
                                                 </button>
                                           </div>
-
                                     </div>
+
 
                               </div>
                         </div>

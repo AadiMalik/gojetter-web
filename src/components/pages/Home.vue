@@ -390,7 +390,7 @@ async function fetchData() {
                                 <img :src="tour?.thumbnail_url" :alt="tour?.title" class="img-fluid" loading="lazy">
                                 <div class="tour-badge" v-for="(tag, idx) in (tour?.tags ? tour?.tags.split(',') : [])"
                                     :key="idx">{{ tag.trim() }}</div>
-                                <div class="tour-price">{{ currency.format(tour?.tour_date[0]?.price) }}</div>
+                                <div class="tour-price">{{ currency.format((tour?.discount_price>0)?tour?.discount_price:tour?.price) }}</div>
                             </div>
                             <div class="tour-content">
                                 <h4 class="one-line">{{ tour?.title }}</h4>

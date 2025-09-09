@@ -29,9 +29,8 @@ const travelers = ref([])
 const termsAgreed = ref(false)
 const placingBooking = ref(false)
 
-const dates = ref(route.query.dates || '')
 const tour_id = ref(route.query.tour_id || '')
-const tour_date_id = ref(route.query.tour_date_id || '')
+const tour_date = ref(route.query.tour_date || '')
 const quantity = ref(Number(route.query.quantity) || 1)
 const price = ref(Number(route.query.price) || 0)
 const slug = ref(route.query.slug || '')
@@ -320,7 +319,7 @@ async function completeBooking() {
         // Prepare order data according to API requirements
         const bookingData = {
             tour_id: tour_id.value,
-            tour_date_id: tour_date_id.value,
+            tour_date: tour_date.value,
             card_id: selectedCardId.value,
             currency_id: currency.selected.id,
             first_name: personalInfo.value.first_name,
@@ -671,8 +670,8 @@ async function completeBooking() {
 
                             <div class="booking-details">
                                 <div class="detail-item">
-                                    <span class="label">Dates:</span>
-                                    <span class="value">{{ dates }}</span>
+                                    <span class="label">Date:</span>
+                                    <span class="value">{{ tour_date }}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="label">Travelers:</span>
