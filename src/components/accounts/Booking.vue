@@ -127,8 +127,7 @@ function showBookingDetails(booking) {
                                     </div>
                                     <div class="order-detail-item">
                                         <div class="detail-label">Tour Date</div>
-                                        <div>{{ formatDate(selectedBooking.tour_date.start_date) }} - {{
-                                            formatDate(selectedBooking.tour_date.end_date) }}</div>
+                                        <div>{{ formatDate(selectedBooking.tour_date) }} </div>
                                     </div>
                                     <div class="order-detail-item">
                                         <div class="detail-label">Participants</div>
