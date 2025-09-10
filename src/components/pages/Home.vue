@@ -1,18 +1,61 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import api from '@/api';
 import { useCurrencyStore } from "@/store/currency";
+import { useServiceStore } from "@/store/service";
+import { useRouter } from 'vue-router';
 
 const currency = useCurrencyStore();
+const serviceStore = useServiceStore()
 
 const activities = ref([]);
 const tours = ref([]);
 const testimonials = ref([]);
 const loading = ref(true);
+const categories = ref([]);
+const destinations = ref([]);
 
+const router = useRouter();
+const selectedDestination = ref('');
+const selectedCategory = ref('');
+
+function goToDestinations() {
+    router.push({
+        path: '/destinations',
+        query: {
+            destination: selectedDestination.value || '',
+            category: selectedCategory.value || ''
+        }
+    });
+}
+
+
+const services = computed(() => serviceStore.services);
 onMounted(async () => {
     await fetchData();
+    await commonData();
 });
+async function commonData() {
+    try {
+        // Run multiple APIs in parallel
+        const [toursRes, categoriesRes] = await Promise.all([
+            api.get('/tour-list'),
+            api.get('/tour-category-list')
+        ]);
+
+        if (toursRes.data?.Success) {
+            destinations.value = toursRes.data.Data.destinations || [];
+        }
+        if (categoriesRes.data?.Success) {
+            categories.value = categoriesRes.data.Data || [];
+        }
+
+    } catch (err) {
+        console.error('Fetch error:', err);
+    } finally {
+        loading.value = false;
+    }
+}
 async function fetchData() {
     try {
         const res = await api.get('/web');
@@ -65,68 +108,36 @@ async function fetchData() {
                         <div class="booking-form-wrapper" data-aos="fade-left" data-aos-delay="200">
                             <div class="booking-form">
                                 <h3 class="form-title">Plan Your Adventure</h3>
-                                <form action="" class="">
+                                <form @submit.prevent="goToDestinations">
                                     <div class="form-group mb-3">
                                         <label for="destination">Destination</label>
-                                        <select name="destination" id="destination" class="form-select">
-                                            <option value="">Choose your destination</option>
-                                            <option value="europe">Europe</option>
-                                            <option value="asia">Asia</option>
-                                            <option value="america">America</option>
-                                            <option value="africa">Africa</option>
-                                            <option value="oceania">Oceania</option>
+                                        <select v-model="selectedDestination" class="form-select">
+                                            <option disabled value="">Choose your destination</option>
+                                            <option v-for="destination in destinations" :key="destination"
+                                                :value="destination.id">{{ destination.name }}</option>
                                         </select>
                                     </div>
-
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label for="checkin">Departure Date</label>
-                                                <input type="date" name="checkin" id="checkin" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label for="checkout">Return Date</label>
-                                                <input type="date" name="checkout" id="checkout" class="form-control">
-                                            </div>
-                                        </div>
+                                    <div class="form-group mb-3">
+                                        <label for="checkin">Departure Date</label>
+                                        <input type="date" name="checkin" id="checkin" class="form-control">
                                     </div>
-
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label for="adults">Adults</label>
-                                                <select name="adults" id="adults" class="form-select">
-                                                    <option value="1">1 Adult</option>
-                                                    <option value="2">2 Adults</option>
-                                                    <option value="3">3 Adults</option>
-                                                    <option value="4">4+ Adults</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label for="children">Children</label>
-                                                <select name="children" id="children" class="form-select">
-                                                    <option value="0">No Children</option>
-                                                    <option value="1">1 Child</option>
-                                                    <option value="2">2 Children</option>
-                                                    <option value="3">3+ Children</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                    <div class="form-group mb-3">
+                                        <label for="adults">Adults</label>
+                                        <select name="adults" id="adults" class="form-select">
+                                            <option value="1">1 Adult</option>
+                                            <option value="2">2 Adults</option>
+                                            <option value="3">3 Adults</option>
+                                            <option value="4">4+ Adults</option>
+                                        </select>
                                     </div>
 
                                     <div class="form-group mb-3">
                                         <label for="tour-type">Tour Type</label>
-                                        <select name="tour_type" id="tour-type" class="form-select">
-                                            <option value="">Select tour type</option>
-                                            <option value="adventure">Adventure</option>
-                                            <option value="cultural">Cultural</option>
-                                            <option value="relaxation">Relaxation</option>
-                                            <option value="family">Family</option>
-                                            <option value="luxury">Luxury</option>
+                                        <select v-model="selectedCategory" class="form-select">
+                                            <option disabled value="">Select tour type</option>
+                                            <option v-for="cat in categories" :key="cat.id" :value="cat.slug || cat.id">
+                                                {{ cat.name }}
+                                            </option>
                                         </select>
                                     </div>
 
@@ -189,89 +200,6 @@ async function fetchData() {
                         </div>
                     </div>
                 </div>
-                <!-- End About Us Content -->
-
-                <!-- Why Choose Us -->
-                <!-- <div class="why-choose-section">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8 text-center mb-5" data-aos="fade-up" data-aos-delay="100">
-                            <h3>Why Choose Us for Your Next Adventure</h3>
-                            <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-                                veniam, quis
-                                nostrud exercitation ullamco laboris.</p>
-                        </div>
-                    </div>
-
-                    <div class="row g-4">
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-people-fill"></i>
-                                </div>
-                                <h4>Local Experts</h4>
-                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
-                                    laudantium
-                                    totam.</p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="250">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-shield-check"></i>
-                                </div>
-                                <h4>Safe &amp; Secure</h4>
-                                <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium
-                                    voluptatum.</p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-cash"></i>
-                                </div>
-                                <h4>Best Prices</h4>
-                                <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet consectetur adipisci
-                                    velit.</p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="350">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-headset"></i>
-                                </div>
-                                <h4>24/7 Support</h4>
-                                <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit
-                                    laboriosam nisi.</p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                </div>
-                                <h4>Global Destinations</h4>
-                                <p>Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil
-                                    molestiae.</p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="450">
-                            <div class="feature-card">
-                                <div class="feature-icon">
-                                    <i class="bi bi-star-fill"></i>
-                                </div>
-                                <h4>Premium Experience</h4>
-                                <p>Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt
-                                    mollit anim.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-                <!-- End Why Choose Us -->
 
             </div>
 
@@ -279,7 +207,7 @@ async function fetchData() {
         <!-- /Why Us Section -->
 
         <!-- Featured Destinations Section -->
-        <section id="featured-destinations" class="featured-destinations section" v-if="activities.length>2">
+        <section id="featured-destinations" class="featured-destinations section" v-if="activities.length > 2">
 
             <!-- Section Title -->
             <div class="container section-title" data-aos="fade-up">
@@ -390,7 +318,9 @@ async function fetchData() {
                                 <img :src="tour?.thumbnail_url" :alt="tour?.title" class="img-fluid" loading="lazy">
                                 <div class="tour-badge" v-for="(tag, idx) in (tour?.tags ? tour?.tags.split(',') : [])"
                                     :key="idx">{{ tag.trim() }}</div>
-                                <div class="tour-price">{{ currency.format((tour?.discount_price>0)?tour?.discount_price:tour?.price) }}</div>
+                                <div class="tour-price">{{
+                                    currency.format((tour?.discount_price > 0) ? tour?.discount_price : tour?.price) }}
+                                </div>
                             </div>
                             <div class="tour-content">
                                 <h4 class="one-line">{{ tour?.title }}</h4>
@@ -401,10 +331,9 @@ async function fetchData() {
                                 </div>
                                 <p class="one-line" v-html="tour?.short_description"></p>
                                 <div class="tour-highlights">
-                                    <span v-for="(tag, index) in tour?.tags.split(',')"
-                                                                  :key="index">
-                                                                  {{ tag.trim() }}
-                                                            </span>
+                                    <span v-for="(tag, index) in tour?.tags.split(',')" :key="index">
+                                        {{ tag.trim() }}
+                                    </span>
                                 </div>
                                 <div class="tour-action">
                                     <router-link :to="`/tour-detail/${tour.slug}`" class="btn-book">Book
@@ -416,7 +345,8 @@ async function fetchData() {
                                                 class="bi bi-star-fill text-warning"></i>
                                             <i v-else class="bi bi-star text-muted"></i>
                                         </span>
-                                        <span>{{Number(tour?.average_rating).toFixed(2) }} ( {{ tour?.tour_reviews.length }} )</span>
+                                        <span>{{ Number(tour?.average_rating).toFixed(2) }} ( {{
+                                            tour?.tour_reviews.length }} )</span>
                                     </div>
                                 </div>
                             </div>
@@ -454,9 +384,10 @@ async function fetchData() {
                                     <span v-html="testimonial?.message"></span>
                                     <i class="bi bi-quote quote-icon-right"></i>
                                 </p>
-                                <img :src="testimonial.image_url ? testimonial.image_url : '/assets/img/person/demoUser.png'" class="testimonial-img" alt="">
-                                <h3>{{testimonial?.name}}</h3>
-                                <h4>{{testimonial?.profession}}</h4>
+                                <img :src="testimonial.image_url ? testimonial.image_url : '/assets/img/person/demoUser.png'"
+                                    class="testimonial-img" alt="">
+                                <h3>{{ testimonial?.name }}</h3>
+                                <h4>{{ testimonial?.profession }}</h4>
                             </div>
                         </div><!-- End testimonial item -->
 
@@ -560,34 +491,8 @@ async function fetchData() {
                     </div>
 
                     <div class="benefits-grid">
-                        <div class="benefit-card" data-aos="flip-left" data-aos-delay="450">
-                            <div class="benefit-visual">
-                                <div class="benefit-icon-wrap">
-                                    <i class="bi bi-geo-alt"></i>
-                                </div>
-                                <div class="benefit-pattern"></div>
-                            </div>
-                            <div class="benefit-content">
-                                <h4>Handpicked Destinations</h4>
-                                <p>Every location is carefully selected by our travel experts for authentic experiences
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="benefit-card" data-aos="flip-left" data-aos-delay="500">
-                            <div class="benefit-visual">
-                                <div class="benefit-icon-wrap">
-                                    <i class="bi bi-award"></i>
-                                </div>
-                                <div class="benefit-pattern"></div>
-                            </div>
-                            <div class="benefit-content">
-                                <h4>Award-Winning Service</h4>
-                                <p>Recognized for excellence with 5-star ratings and industry awards</p>
-                            </div>
-                        </div>
-
-                        <div class="benefit-card" data-aos="flip-left" data-aos-delay="550">
+                        <div v-for="(service, index) in services" class="benefit-card" data-aos="flip-left"
+                            data-aos-delay="450">
                             <div class="benefit-visual">
                                 <div class="benefit-icon-wrap">
                                     <i class="bi bi-heart"></i>
@@ -595,8 +500,9 @@ async function fetchData() {
                                 <div class="benefit-pattern"></div>
                             </div>
                             <div class="benefit-content">
-                                <h4>Personalized Care</h4>
-                                <p>Tailored itineraries designed around your preferences and travel style</p>
+                                <h4>{{ service?.name }}</h4>
+                                <!-- <p v-html="service?.description">
+                                </p> -->
                             </div>
                         </div>
                     </div>

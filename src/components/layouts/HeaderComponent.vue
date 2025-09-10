@@ -89,16 +89,18 @@
 <script setup>
 import { ref, onMounted, computed } from "vue"
 import { useAuthStore } from "@/store/auth"
-import { useCartStore } from '@/store/cart'
+import { useCartStore } from "@/store/cart"
 import { useCurrencyStore } from "@/store/currency"
-import api from "@/api"
+import { useServiceStore } from "@/store/service"
 
 const auth = useAuthStore()
 const cartStore = useCartStore()
+const currency = useCurrencyStore()
+const serviceStore = useServiceStore()
+const services = computed(() => serviceStore.services)
+
 const user = computed(() => auth.user)
 const cartCount = computed(() => cartStore.carts.length)
-const currency = useCurrencyStore()
-const services = ref([]);
 
 function logout() {
     auth.logout()
@@ -106,19 +108,8 @@ function logout() {
 }
 
 onMounted(() => {
-    fetchService()
+    serviceStore.fetchServices()
     currency?.fetchCurrencies()
     if (user.value) cartStore.fetchCart()
 })
-
-async function fetchService() {
-    try {
-        const res = await api.get('/service-list');
-        if (res.data?.Success) {
-            services.value = res.data.Data || [];
-        }
-    } catch (err) {
-        console.error('services fetch error:', err);
-    }
-}
 </script>

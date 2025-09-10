@@ -3,6 +3,9 @@ import { onMounted, ref } from 'vue';
 import axios from 'axios';
 import api from '@/api';
 import { useCurrencyStore } from "@/store/currency"
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 const currency = useCurrencyStore()
 
@@ -17,6 +20,10 @@ const selectedCategory = ref('');
 const selectedPrice = ref('');
 
 onMounted(async () => {
+    if (route.query.destination) selectedDestination.value = route.query.destination;
+    if (route.query.category) selectedCategory.value = route.query.category;
+    await fetchToursAndActivity();
+    
     await fetchData();
 });
 
@@ -185,12 +192,12 @@ async function fetchToursAndActivity() {
                                                 <div class="destination-stats">
                                                     <span class="tours-available"><i class="bi bi-map"></i> {{
                                                         tour?.duration
-                                                        }}</span>
+                                                    }}</span>
                                                     <span class="starting-price">
                                                         {{ (tour.discount_price &&
-                                                                tour.discount_price > 0
-                                                                ? currency.format(tour.discount_price)
-                                                                : currency.format(tour.price))
+                                                            tour.discount_price > 0
+                                                            ? currency.format(tour.discount_price)
+                                                            : currency.format(tour.price))
                                                         }}
                                                     </span>
                                                 </div>
@@ -225,25 +232,26 @@ async function fetchToursAndActivity() {
                                 class="col-lg-4 col-md-6 destination-item isotope-item filter-coastal">
                                 <router-link :to="`/activity-detail/${activity?.slug}`" class="destination-tile">
                                     <div class="tile-image">
-                                        <img :src="activity.thumbnail_url" alt="{{ activity.title }}" class="img-fluid"
+                                        <img :src="activity.thumbnail_url" :alt="activity.title" class="img-fluid"
                                             loading="lazy">
                                         <div class="overlay-content">
                                             <span class="destination-tag luxury">{{ activity?.destination?.name
-                                                }}</span>
+                                            }}</span>
                                             <div class="destination-info">
                                                 <h4 class="one-line">{{ activity?.title }}</h4>
                                                 <p v-html="activity?.short_description" class="one-line"></p>
                                                 <div class="destination-stats">
                                                     <span class="tours-available"><i class="bi bi-map"></i> {{
                                                         activity?.duration
-                                                        }}</span>
+                                                    }}</span>
                                                     <span class="starting-price">
-                                                        {{ Array.isArray(activity?.activity_date) && activity.activity_date.length > 0
+                                                        {{ Array.isArray(activity?.activity_date) &&
+                                                            activity.activity_date.length > 0
                                                             ? (activity.activity_date[0].discount_price &&
                                                                 activity.activity_date[0].discount_price > 0
-                                                        ? currency.format(activity.activity_date[0].discount_price)
-                                                        : currency.format(activity.activity_date[0].price))
-                                                        : currency.format(0)
+                                                                ? currency.format(activity.activity_date[0].discount_price)
+                                                                : currency.format(activity.activity_date[0].price))
+                                                            : currency.format(0)
                                                         }}
                                                     </span>
                                                 </div>
